@@ -47,7 +47,7 @@ func SuccessPagination(c fiber.Ctx, message string, data interface{}, meta Pagin
 }
 func NotFoundPagination(c fiber.Ctx, message string, data interface{}, meta PaginationMeta)error {
 	return c.Status(fiber.StatusNotFound).JSON(ResponsePaginated {
-		Status:"NotFound",
+		Status:"Error Not Found",
 		ResponseCode: fiber.StatusNotFound ,
 		Message: message,
 		Data: data,
