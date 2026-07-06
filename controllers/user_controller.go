@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"math"
+	"strconv"
+
 	"github.com/Ciptaaaa/Project-Management.git/models"
 	"github.com/Ciptaaaa/Project-Management.git/services"
 	"github.com/Ciptaaaa/Project-Management.git/utils"
@@ -77,4 +80,56 @@ if err != nil {
 	return utils.BadRequest(ctx, "Internal Server Error:", err.Error())
 }
 return utils.Success(ctx, "Data Found!", userResp)
+}
+
+
+
+const (
+    defaultLimit = 10
+    maxLimit     = 100
+    defaultPage  = 1
+)
+
+func (c *UserController) GetUserPagination (ctx fiber.Ctx) error {
+	 page, err := strconv.Atoi(ctx.Query("page", "1"))
+    if err != nil || page < 1 {
+        page = defaultPage
+    }
+	 limit, err := strconv.Atoi(ctx.Query("limit", "10"))
+    if err != nil || limit < 1 {
+        limit = defaultLimit
+    }
+    if limit > maxLimit {
+        limit = maxLimit 
+    }
+	offset := (page - 1 )* limit
+	filter := ctx.Query("filter","")
+	sort := ctx.Query("sort","")
+
+
+	users,total,err := c.service.GetAllPagination(filter,sort,limit,offset,)
+	if err != nil{
+		return utils.BadRequest(ctx, "Failed Get Data", err.Error())
+	}
+
+	var userResp []models.UserResponse
+	if err := copier.Copy(&userResp, &users); err != nil {
+    return utils.BadRequest(ctx, "Failed to process data", err.Error())
+	}
+
+	
+	meta := utils.PaginationMeta{
+		Page:page,
+		Limit:limit,
+		Total: int(total),
+		TotalPage:int (math.Ceil(float64(total)/(float64(limit)))),
+		Filter: filter,
+		Sort: sort,
+	}
+
+	if total == 0 {
+		return utils.NotFoundPagination(ctx, "Data not found", userResp,meta)
+	}
+
+	return utils.SuccessPagination(ctx, "Data found",userResp, meta)
 }

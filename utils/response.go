@@ -9,6 +9,23 @@ type Response struct {
 	Data         interface{} `json:"data,omitempty"`
 	Error        string      `json:"error,omitempty"`
 }
+type ResponsePaginated struct {
+	Status       string      `json:"status"`
+	ResponseCode int         `json:"response_code"`
+	Message      string      `json:"message,omitempty"`
+	Data         interface{} `json:"data,omitempty"`
+	Error        string      `json:"error,omitempty"`
+	Meta 		 PaginationMeta 	 `json:"meta"`
+}
+
+type PaginationMeta struct {
+	Page      int    `json:"page" example:"1"`
+	Limit     int    `json:"limit" example:"10"`
+	Total     int    `json:"total" example:"100"`
+	TotalPage int    `json:"total_page" example:"10"`
+	Filter    string `json:"filter" example:"name=JhonDoe"`
+	Sort      string `json:"sort" example:"-id"`
+}
 
 func Success(c fiber.Ctx, message string, data interface{})error {
 	return c.Status(fiber.StatusOK).JSON(Response {
@@ -16,6 +33,25 @@ func Success(c fiber.Ctx, message string, data interface{})error {
 		ResponseCode: fiber.StatusOK ,
 		Message: message,
 		Data: data,
+	})
+}
+
+func SuccessPagination(c fiber.Ctx, message string, data interface{}, meta PaginationMeta)error {
+	return c.Status(fiber.StatusOK).JSON(ResponsePaginated {
+		Status:"Success",
+		ResponseCode: fiber.StatusOK ,
+		Message: message,
+		Data: data,
+		Meta:meta,
+	})
+}
+func NotFoundPagination(c fiber.Ctx, message string, data interface{}, meta PaginationMeta)error {
+	return c.Status(fiber.StatusNotFound).JSON(ResponsePaginated {
+		Status:"NotFound",
+		ResponseCode: fiber.StatusNotFound ,
+		Message: message,
+		Data: data,
+		Meta:meta,
 	})
 }
 
