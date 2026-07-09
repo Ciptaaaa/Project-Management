@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+
 	"github.com/Ciptaaaa/Project-Management.git/config"
 	"github.com/Ciptaaaa/Project-Management.git/controllers"
 	"github.com/Ciptaaaa/Project-Management.git/database/seed"
@@ -17,12 +18,19 @@ func main() {
 	seed.SeedAdmin()
 	app:= fiber.New()
 
+	//user 
 	userRepo := repositories.NewUserRepository()
 	userService := services.NewUserService(userRepo)
 	userController:= controllers.NewUserController(userService)
+
+	//board
+	boardRepo := repositories.NewBoardRepository()
+	boardService := services.NewBoardService(boardRepo, userRepo)
+	boardController := controllers.NewBoardController(boardService)
+
 	
 	
-	routes.Setup(app, userController)
+	routes.Setup(app, userController, boardController)
 
 	port:= config.AppConfig.AppPort
 	log.Println("Server is running on port:",port)
