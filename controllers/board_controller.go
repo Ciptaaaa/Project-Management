@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"math"
+	"strconv"
+
 	"github.com/Ciptaaaa/Project-Management.git/models"
 	"github.com/Ciptaaaa/Project-Management.git/services"
 	"github.com/Ciptaaaa/Project-Management.git/utils"
@@ -105,4 +108,39 @@ func (c *BoardController) RemoveBoardMembers(ctx fiber.Ctx) error{
 	}
 
 	return utils.Success(ctx, "Successfully remove members", nil)
+}
+
+func (c *BoardController) GetMyBoardPaginate(ctx fiber.Ctx) error{
+	claims,ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return utils.Unauthorized(ctx, "Invalid token claims", "")
+	}
+
+	userID, ok := claims["public_id"].(string)
+
+	if !ok {
+		return utils.Unauthorized(ctx, "Invalid token claims", "public_id missing or invalid")
+	}
+
+	page, _ := strconv.Atoi(ctx.Query("page","1"))
+	limit, _ := strconv.Atoi(ctx.Query("limit","10"))
+	offset := (page- 1) * limit
+
+	filter := ctx.Query("filter","")
+	sort:= ctx.Query("sort", "")
+
+	boards,total, err := c.service.GetAllByUserPaginate(userID,filter,sort, limit,offset)
+	if err != nil{
+		return utils.InternalServerError(ctx, "Internal Server Error",err.Error())
+	}
+	meta := utils.PaginationMeta{
+		Page:page,
+		Limit: limit,
+		Total: int(total),
+		TotalPage: int(math.Ceil(float64(total)/float64(limit))),
+		Filter: filter,
+		Sort: sort,
+	}
+
+	return utils.SuccessPagination(ctx, "Successfully Get Data Board", boards, meta)
 }
