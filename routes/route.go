@@ -39,7 +39,7 @@ func Setup(app *fiber.App,
 	userGroup.Get("/page", userControl.GetUserPagination) // api/v1/users/page
 	userGroup.Get("/:id", userControl.GetUser) // api/v1/users/:id
 	userGroup.Put("/:id", userControl.UpdateUser)// update user
-	userGroup.Delete("/:id",userControl.DeleteUser)//delete user
+	userGroup.Delete("/:id",userControl.DeleteUser)//delete user soft deleted 
 
 
 	//board group
@@ -47,4 +47,5 @@ func Setup(app *fiber.App,
 	boardGroup.Post("/",boardControl.CreateBoard)
 	boardGroup.Put("/:id",boardControl.UpdateBoard)
 	boardGroup.Post("/:id/members", boardControl.AddBoardMembers)
+	boardGroup.Delete("/:id/members", boardControl.RemoveBoardMembers)
 }

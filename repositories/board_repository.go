@@ -12,6 +12,7 @@ Create(board *models.Board)error
 Update(board *models.Board) error
 FindByPublicID(publicID string) (*models.Board, error)
 AddMember(boardID uint, userIDs []uint)error
+RemoveMember(boardId uint, userIDs []uint) error
 }
 
 type boardRepository struct {
@@ -54,4 +55,12 @@ func (r *boardRepository) AddMember(boardID uint, userIDs []uint)error{
  }
  return config.DB.Create(&members).Error
 
+}
+
+
+func (r *boardRepository) RemoveMember(boardId uint, userIDs []uint) error{
+	if len(userIDs) == 0 { 
+		return nil
+	}
+	return config.DB.Where("board_internal_id = ? AND user_internal_id IN (?)",boardId,userIDs).Delete(&models.BoardMember{}).Error
 }

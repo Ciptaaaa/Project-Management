@@ -90,3 +90,19 @@ func (c *BoardController) AddBoardMembers(ctx fiber.Ctx) error{
 
 	return utils.Success(ctx, "Successfully added member", nil)
 }
+
+func (c *BoardController) RemoveBoardMembers(ctx fiber.Ctx) error{
+	publicID := ctx.Params("id")
+
+	var userIDs []string
+
+	if err := ctx.Bind().Body(&userIDs);err != nil {
+		return utils.BadRequest(ctx, "Failed Parsed Data",err.Error())
+	}
+
+	if err := c.service.RemoveMembers(publicID, userIDs); err != nil {
+		 return utils.BadRequest(ctx, "Failed deleted Members",err.Error())
+	}
+
+	return utils.Success(ctx, "Successfully remove members", nil)
+}
