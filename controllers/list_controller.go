@@ -57,3 +57,15 @@ if err != nil {
 }
 return utils.Success(ctx, "Successfully Updated List",updatedList)
 }
+
+func (c *ListController) GetListOnBoard(ctx fiber.Ctx)error{
+	boardPublicID := ctx.Params("board_id")
+		if _,err:=  uuid.Parse(boardPublicID); err != nil{
+		return utils.BadRequest(ctx, "ID not valid",err.Error())
+	}
+	lists, err :=c.service.GetByBoardID(boardPublicID)
+	if err != nil{
+		return utils.NotFound(ctx, "Failed get data!",err.Error())
+	}
+	return utils.Success(ctx, "Successfully Get Data",lists)
+}
