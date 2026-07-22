@@ -61,6 +61,10 @@ func ( s *listService) GetByBoardID(boardPublicID string)(*ListWithOrder, error)
 		return nil, errors.New("Failed to get list :"+err.Error()) 
 	}
 
+	if len(positions) == 0 {
+		return nil, errors.New("Lists position not found :") 
+	}
+	
 	//sorting by position
 	orderedList := utils.SortListByPosition(lists,positions)
 
