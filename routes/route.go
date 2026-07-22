@@ -51,6 +51,7 @@ func Setup(app *fiber.App,
 	boardGroup.Delete("/:id/members", boardControl.RemoveBoardMembers)
 	boardGroup.Get("/my",boardControl.GetMyBoardPaginate)
 	boardGroup.Get("/:board_id/lists",listControl.GetListOnBoard)
+	boardGroup.Put("/:board_id/position",listControl.UpdateListPosition)
 
 	//list group
 	listGroup := api.Group("/lists")
