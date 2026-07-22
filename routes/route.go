@@ -56,4 +56,5 @@ func Setup(app *fiber.App,
 	listGroup := api.Group("/lists")
 	listGroup.Post("/",listControl.CreateList)
 	listGroup.Put("/:id",listControl.UpdateList)
+	listGroup.Delete("/:id",listControl.DeleteList)
 }
