@@ -1,5 +1,6 @@
 # Project Management API
----
+
+REST API backend untuk aplikasi manajemen proyek bergaya Trello (board → list → card). Dibangun dengan Go, Fiber v3, dan GORM.
 
 ## Daftar Isi
 
@@ -14,7 +15,6 @@
 - [Status Implementasi](#status-implementasi)
 - [Deployment](#deployment)
 
-
 ---
 
 ## Tech Stack
@@ -27,89 +27,97 @@
 | Database | PostgreSQL |
 | Auth | JWT (`golang-jwt/jwt/v5`), custom middleware |
 | Hashing Password | bcrypt (`golang.org/x/crypto`) |
-| Migration | [golang-migrate](https://github.com/golang-migrate/migrate) (file SQL manual di `database/migrations`) |
+| Migration | [golang-migrate](https://github.com/golang-migrate/migrate) |
 | Env Loader | `godotenv` |
-| Struct Mapping | `jinzhu/copier` (mapping `User` → `UserResponse`) |
+| Struct Mapping | `jinzhu/copier` |
 
 ---
 
 ## Arsitektur
 
-Layered architecture — konsepnya sama seperti kamu memisahkan `components/` dari `services/api/` di Next.js, supaya route handler tidak berisi semua logic sekaligus.
+Layered architecture:
 
 ```
-HTTP Request
-   │
-   ▼
-routes/          → routing & pasang middleware (mirip App Router route.ts, tapi manual)
-   │
-   ▼
-controllers/     → terima request, parsing query/body, bentuk response (≈ handler di route.ts)
-   │
-   ▼
-services/        → business logic (≈ service layer di /lib atau /services Next.js kamu)
-   │
-   ▼
-repositories/    → akses database via GORM, termasuk logic query dinamis (≈ Prisma client call yang dibungkus)
-   │
-   ▼
-models/          → definisi struct/tabel (≈ schema.prisma)
-   │
-   ▼
-PostgreSQL
+routes/          → routing & middleware
+controllers/     → parsing request, membentuk response
+services/        → business logic
+repositories/    → akses database via GORM
+models/          → definisi struct/tabel
 ```
+
+Dependency injection dirakit manual di `main.go`:
 
 ```go
 userRepo := repositories.NewUserRepository()
 userService := services.NewUserService(userRepo)
 userController := controllers.NewUserController(userService)
-routes.Setup(app, userController)
+
+boardRepo := repositories.NewBoardRepository()
+boardMemberRepo := repositories.NewBoardMemberRepository()
+boardService := services.NewBoardService(boardRepo, userRepo, boardMemberRepo)
+boardController := controllers.NewBoardController(boardService)
+
+listPosRepo := repositories.NewListPositionRepository()
+listRepo := repositories.NewListRepository()
+listService := services.NewListService(listRepo, boardRepo, listPosRepo)
+listController := controllers.NewListController(listService)
+
+routes.Setup(app, userController, boardController, listController)
 ```
+
+---
+
 ## Struktur Folder
 
 ```
 Project-Management/
 ├── config/
-│   └── config.go              
+│   └── config.go
 ├── controllers/
-│   └── user_controller.go     
+│   ├── user_controller.go
+│   ├── board_controller.go
+│   └── list_controller.go
 ├── database/
 │   ├── migrations/
-│   │   ├── 000001_create_user_table.up.sql
-│   │   └── 000001_create_user_table.down.sql
 │   └── seed/
-│       └── seed_admin.go      
+│       └── seed_admin.go
 ├── middleware/
-│   └── jwt.go                 
+│   └── jwt.go
 ├── models/
-│   ├── user.go                  
-│   ├── board.go                 
-│   ├── board_member.go          
-│   ├── list.go                  
-│   ├── list_position.go         
-│   ├── card.go                  
-│   ├── card_assignee.go         
-│   ├── card_attachment.go       
-│   ├── card_label.go            
-│   ├── card_position.go         
-│   ├── comment.go               
-│   ├── label.go                 
+│   ├── user.go
+│   ├── board.go
+│   ├── board_member.go
+│   ├── list.go
+│   ├── list_position.go
+│   ├── card.go
+│   ├── card_assignee.go
+│   ├── card_attachment.go
+│   ├── card_label.go
+│   ├── card_position.go
+│   ├── comment.go
+│   ├── label.go
 │   └── types/
-│       └── uuid_array.go       
+│       └── uuid_array.go
 ├── repositories/
-│   └── user_repository.go      
+│   ├── user_repository.go
+│   ├── board_repository.go
+│   ├── board_member_repository.go
+│   ├── list_repository.go
+│   └── list_position_repository.go
 ├── routes/
-│   └── route.go                
+│   └── route.go
 ├── services/
-│   └── user_service.go         
+│   ├── user_service.go
+│   ├── board_service.go
+│   └── list_service.go
 ├── utils/
-│   ├── jwt.go                  
-│   ├── password.go             
-│   └── response.go             
-├── .gitignore                  │
+│   ├── jwt.go
+│   ├── password.go
+│   ├── response.go
+│   └── sorting_list_position.go
 ├── go.mod
 ├── go.sum
-└── main.go                     
+└── main.go
 ```
 
 ---
@@ -118,9 +126,9 @@ Project-Management/
 
 ### Prasyarat
 
-- Go **1.25** atau lebih baru
-- PostgreSQL **13+**
-- [`golang-migrate` CLI](https://github.com/golang-migrate/migrate#cli-usage) (opsional, untuk menjalankan file migration SQL)
+- Go 1.25 atau lebih baru
+- PostgreSQL 13+
+- [`golang-migrate` CLI](https://github.com/golang-migrate/migrate#cli-usage)
 
 ### Clone & install dependency
 
@@ -130,7 +138,13 @@ cd Project-Management
 go mod download
 ```
 
+---
 
+## Konfigurasi Environment
+
+Buat file `.env` di root project:
+
+```bash
 # Server
 PORT=3030
 
@@ -143,14 +157,11 @@ DB_NAME=project_management
 
 # JWT
 JWT_SECRET=ganti-dengan-random-string-panjang-dan-unik
-JWT_EXPIRY=1h
+JWT_EXPIRY=6h
 REFRESH_TOKEN_EXPIRED=24h
-
-# Seed admin
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=admin123
-ADMIN_ROLE=admin
 ```
+
+---
 
 ## Menjalankan Aplikasi
 
@@ -168,12 +179,13 @@ migrate -path database/migrations \
   up
 ```
 
-### 3. Jalankan server
+### 3. Jalankan server (development)
 
 ```bash
 go run main.go
 ```
-### Build binary untuk production
+
+### 4. Build binary untuk production
 
 ```bash
 go build -o bin/server main.go
@@ -184,30 +196,44 @@ go build -o bin/server main.go
 
 ## Skema Database
 
-Migration yang **sudah ada** (`000001_create_user_table.up.sql`):
+```
+users
+ ├─ internal_id (PK, bigserial)
+ ├─ public_id   (UUID, unique)
+ ├─ name, email (unique), password (bcrypt hash), role
+ └─ created_at, updated_at, deleted_at
 
-```sql
-CREATE TABLE users (
-    internal_id BIGSERIAL PRIMARY KEY,
-    name varchar(255) NOT NULL,
-    email varchar(255) NOT NULL,
-    password text NOT NULL,
-    role varchar(50) NOT NULL DEFAULT 'user',
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL,
-    public_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    CONSTRAINT user_public_id_unique UNIQUE(public_id)
-);
+boards
+ ├─ internal_id (PK), public_id (UUID, unique)
+ ├─ title, description, due_date
+ └─ owner_internal_id / owner_public_id → FK users, ON DELETE CASCADE
+
+board_members
+ ├─ board_internal_id → FK boards, ON DELETE CASCADE
+ └─ user_internal_id  → FK users,  ON DELETE CASCADE
+
+lists
+ ├─ internal_id (PK), public_id (UUID, unique)
+ ├─ board_internal_id / board_public_id → FK boards, ON DELETE CASCADE
+ └─ title, position
+
+list_positions
+ ├─ internal_id (PK), public_id (UUID, unique)
+ ├─ board_internal_id → FK boards, ON DELETE CASCADE (unique per board)
+ └─ list_order UUID[]
 ```
 
+Model `Card`, `CardAssignee`, `CardAttachment`, `CardLabel`, `CardPosition`, `Comment`, `Label` sudah ada di `models/`, tapi belum ada migration untuk tabelnya.
+
+---
 
 ## Dokumentasi API
 
-Base URL: `http://localhost:3030`
+Base URL (default): `http://localhost:3030`
 
-Format response standar (`utils/response.go`):
+### Format Response
 
+**Success**
 ```json
 {
   "status": "Success",
@@ -217,7 +243,18 @@ Format response standar (`utils/response.go`):
 }
 ```
 
-Response error:
+**Success dengan pagination**
+```json
+{
+  "status": "Success",
+  "response_code": 200,
+  "message": "...",
+  "data": [ ],
+  "meta": { "page": 1, "limit": 10, "total": 100, "total_page": 10, "filter": "", "sort": "" }
+}
+```
+
+**Error**
 ```json
 {
   "status": "Error Bad Request",
@@ -230,8 +267,6 @@ Response error:
 ### Auth
 
 #### `POST /v1/auth/register`
-
-Registrasi user baru. Role otomatis `"user"` — tidak bisa diset dari client (mencegah privilege escalation lewat body request).
 
 **Request body**
 ```json
@@ -254,8 +289,6 @@ Registrasi user baru. Role otomatis `"user"` — tidak bisa diset dari client (m
   }
 }
 ```
-
-Error `400` jika email sudah terdaftar.
 
 #### `POST /v1/auth/login`
 
@@ -283,76 +316,82 @@ Error `400` jika email sudah terdaftar.
 }
 ```
 
-`access_token` berisi claim `user_id`, `role`, `public_id`, `email`, `exp` (default 6 jam dari `JWT_EXPIRY`). `refresh_token` berisi `user_id` + `exp` (default 24 jam) — endpoint `POST /v1/auth/refresh` untuk redeem token ini 
+`access_token` membawa claim `user_id`, `role`, `public_id`, `email`, `exp` (default `JWT_EXPIRY`). `refresh_token` membawa `user_id` + `exp` (default `REFRESH_TOKEN_EXPIRED`).
 
-### User (protected — butuh `Authorization: Bearer <access_token>`)
+Semua endpoint di bawah ini butuh header `Authorization: Bearer <access_token>`.
 
-#### `GET /api/v1/users/page` — 🆕 pagination, filter, sort
+### User
 
-Endpoint baru untuk list user dengan pagination.
-
-**Query params**
+#### `GET /api/v1/users/page`
 
 | Param | Tipe | Default | Keterangan |
 |---|---|---|---|
 | `page` | int | `1` | Halaman ke berapa |
-| `limit` | int | `10` | Jumlah item per halaman, di-cap maksimal `100` |
-| `filter` | string | `""` | Cari di kolom `name` ATAU `email` (case-insensitive, `ILIKE`) |
-| `sort` | string | `""` | Nama kolom untuk sorting. Prefix `-` = descending. Kolom yang diizinkan: `id`, `name`, `email` (whitelist di `allowedSortFields`) |
+| `limit` | int | `10` | Item per halaman, di-cap maksimal `100` |
+| `filter` | string | `""` | Cari di kolom `name` ATAU `email` (case-insensitive) |
+| `sort` | string | `""` | Nama kolom untuk sorting. Prefix `-` = descending |
 
-**Contoh request**
 ```
-GET /api/v1/users/page?page=1&limit=10&filter=cipta&sort=-id
+GET /api/v1/users/page?page=1&limit=10&filter=cipta&sort=-internal_id
 ```
-
-**Response `200 OK`**
-```json
-{
-  "status": "Success",
-  "response_code": 200,
-  "message": "Data found",
-  "data": [
-    {
-      "public_id": "b3f1...uuid",
-      "name": "Cipta",
-      "email": "cipta@example.com",
-      "role": "user",
-      "created_at": "...",
-      "updated_at": "..."
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "limit": 10,
-    "total": 1,
-    "total_page": 1,
-    "filter": "cipta",
-    "sort": "-id"
-  }
-}
-```
-
 
 #### `GET /api/v1/users/:id`
 
-`:id` adalah `public_id` (UUID), bukan `internal_id`.
+`:id` = `public_id`.
 
-**Response `200 OK`**
+#### `PUT /api/v1/users/:id`
+
+Update data user. `:id` = `public_id`.
+
+#### `DELETE /api/v1/users/:id`
+
+Soft delete. `:id` = `internal_id`.
+
+### Board (protected)
+
+#### `POST /api/v1/boards`
+
+**Request body**
 ```json
-{
-  "status": "Success",
-  "response_code": 200,
-  "message": "Data Found!",
-  "data": {
-    "public_id": "b3f1...uuid",
-    "name": "Cipta",
-    "email": "cipta@example.com",
-    "role": "user",
-    "created_at": "...",
-    "updated_at": "..."
-  }
-}
+{ "title": "Website Redesign", "description": "...", "due_date": "2026-08-01T00:00:00Z" }
 ```
+
+#### `PUT /api/v1/boards/:id`
+
+Update board. `:id` = `public_id`.
+
+#### `POST /api/v1/boards/:id/members`
+
+**Request body**
+```json
+["b3f1...uuid", "a2e2...uuid"]
+```
+
+#### `DELETE /api/v1/boards/:id/members`
+
+**Request body**
+```json
+["b3f1...uuid", "a2e2...uuid"]
+```
+
+#### `GET /api/v1/boards/my`
+
+Query params: `page`, `limit`, `filter`, `sort`.
+
+### List (protected)
+
+#### `POST /api/v1/lists`
+
+**Request body**
+```json
+{ "board_public_id": "b3f1...uuid", "title": "To Do" }
+```
+
+#### `PUT /api/v1/lists/:id`
+
+Update list. `:id` = `public_id`.
+
+---
 
 ## Status Implementasi
 
@@ -360,9 +399,23 @@ GET /api/v1/users/page?page=1&limit=10&filter=cipta&sort=-id
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | User / Auth | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | User — Pagination/Filter/Sort | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Board | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| List | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Board | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Board Member | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| List | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| List Position (reorder) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Card | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Card Assignee / Position | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Label / Comment / Attachment | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Refresh token endpoint | – | – | – | ❌ | ❌ | ❌ |
+| Refresh token redeem | – | – | – | ❌ | ❌ | ❌ |
 
+---
+
+## Deployment
+
+1. Build binary untuk target OS/arch:
+   ```bash
+   GOOS=linux GOARCH=amd64 go build -o bin/server main.go
+   ```
+2. Siapkan PostgreSQL (managed atau self-hosted) dan jalankan seluruh migration di `database/migrations`.
+3. Set environment variable production lewat secret manager platform (Railway/Fly.io/Docker secrets/systemd EnvironmentFile).
+4. Jalankan binary di belakang reverse proxy (Nginx/Caddy) untuk TLS termination, atau expose lewat platform yang sudah handle TLS (Railway, Fly.io, Render).
