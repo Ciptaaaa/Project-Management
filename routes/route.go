@@ -12,7 +12,8 @@ import (
 func Setup(app *fiber.App,
 	 userControl *controllers.UserController,
 	 boardControl *controllers.BoardController,
-	 listControl *controllers.ListController){
+	 listControl *controllers.ListController,
+	 controllerControl *controllers.CardController){
 	err := godotenv.Load()
 	if err != nil{
 		log.Fatal("Error Loading .env file")
@@ -58,4 +59,9 @@ func Setup(app *fiber.App,
 	listGroup.Post("/",listControl.CreateList)
 	listGroup.Put("/:id",listControl.UpdateList)
 	listGroup.Delete("/:id",listControl.DeleteList)
+
+	//Card group
+
+	cardGroup:= api.Group("/cards")
+	cardGroup.Post("/",controllerControl.CreateCard)
 }
