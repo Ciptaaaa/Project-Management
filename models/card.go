@@ -18,7 +18,7 @@ type Card struct {
 
 
 	//relations
-	Assigness []CardAssignee`json:"assigness,omitempty" gorm:"foreignKey:CardID;reference:InternalID"`
-	Attachments []CardAttachment  `json:"attachments,omitempty" gorm:"foreignKey:CardID;reference:InternalID"`
-	Labels []CardLabel `json:"labels,omitempty" gorm:"foreignKey:CardID;reference:InternalID"`
+	Assignees []CardAssignee`json:"assigness,omitempty" gorm:"foreignKey:CardID;references:InternalID"`
+	Attachments []CardAttachment  `json:"attachments,omitempty" gorm:"foreignKey:CardID;references:InternalID"`
+	Labels []CardLabel `json:"labels,omitempty" gorm:"foreignKey:CardID;references:InternalID"`
 }

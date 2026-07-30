@@ -11,7 +11,7 @@ import (
 
 type CardRepository interface {
 	Create(card *models.Card) error
-	Update(card *models.Card) error
+	Update(card *models.Card) (*models.Card, error) 
 	Delete(id uint) error
 	FindByID(id uint)(*models.Card, error)
 	FindByPublicID(publicID string)(*models.Card, error)
@@ -32,8 +32,19 @@ func NewCardRepository() CardRepository{
 func (r *cardRepository) Create(card *models.Card)error{
 return config.DB.Create(card).Error	
 }
-func (r *cardRepository) Update(card *models.Card)error{
-	return config.DB.Save(card).Error
+func (r *cardRepository) Update(card *models.Card) (*models.Card, error) {
+	var existing models.Card
+	if err := config.DB.Where("public_id = ?", card.PublicID).First(&existing).Error; err != nil {
+		return nil, err
+	}
+	existing.Title = card.Title
+	existing.Description = card.Description
+	existing.DueDate = card.DueDate
+	existing.Position = card.Position
+	if err := config.DB.Save(&existing).Error; err != nil {
+		return nil, err
+	}
+	return &existing, nil
 }
 func(r *cardRepository) Delete(id uint)error{
 	return config.DB.Delete(&models.Card{},id).Error
