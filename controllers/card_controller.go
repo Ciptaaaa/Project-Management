@@ -92,3 +92,27 @@ func (c *CardController) DeleteCard(ctx fiber.Ctx) error{
 	 }
 	 return utils.Success(ctx,"Successfully delete card",publicID)
 }
+
+func (c *CardController) GetListCard(ctx fiber.Ctx)error{
+	listID := ctx.Params("list_id")
+	if _,err := uuid.Parse(listID); err!=nil{
+		return utils.BadRequest(ctx,"Id list not valid",err.Error())
+	}
+	cards, err := c.service.GetByListID(listID)
+	if err !=nil{
+		return utils.InternalServerError(ctx,"Failed get data",err.Error())
+	}
+	return utils.Success(ctx,"Successfully Get list card",cards)
+}
+
+func (c *CardController) GetCardDetail(ctx fiber.Ctx) error{
+	cardPublicID := ctx.Params("id")
+	if _, err := uuid.Parse(cardPublicID); err != nil {
+		return utils.BadRequest(ctx, "Id not valid", err.Error())
+	}
+	card, err := c.service.GetByPublicID(cardPublicID)
+	if err != nil{
+		return utils.NotFound(ctx, "Card not found", err.Error())
+	}
+	return utils.Success(ctx, "Successfully get Card", card)
+}

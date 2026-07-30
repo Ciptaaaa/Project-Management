@@ -59,6 +59,7 @@ func Setup(app *fiber.App,
 	listGroup.Post("/",listControl.CreateList)
 	listGroup.Put("/:id",listControl.UpdateList)
 	listGroup.Delete("/:id",listControl.DeleteList)
+	listGroup.Get("/:list_id/cards",controllerControl.GetListCard)
 
 	//Card group
 
@@ -66,4 +67,5 @@ func Setup(app *fiber.App,
 	cardGroup.Post("/",controllerControl.CreateCard)
 	cardGroup.Put("/:id",controllerControl.UpdateCard)
 	cardGroup.Delete("/:id",controllerControl.DeleteCard)
+	cardGroup.Get("/:id",controllerControl.GetCardDetail)
 }
