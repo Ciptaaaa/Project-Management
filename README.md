@@ -1,51 +1,51 @@
 # Project Management API
 
-REST API backend untuk aplikasi manajemen proyek bergaya Trello (board → list → card). Dibangun dengan Go, Fiber v3, dan GORM.
+REST API backend for a Trello-style project management app (board → list → card). Built with Go, Fiber v3, and GORM.
 
-## Daftar Isi
+## Table of Contents
 
 - [Tech Stack](#tech-stack)
-- [Arsitektur](#arsitektur)
-- [Struktur Folder](#struktur-folder)
-- [Instalasi](#instalasi)
-- [Konfigurasi Environment](#konfigurasi-environment)
-- [Menjalankan Aplikasi](#menjalankan-aplikasi)
-- [Skema Database](#skema-database)
-- [Dokumentasi API](#dokumentasi-api)
-- [Status Implementasi](#status-implementasi)
+- [Architecture](#architecture)
+- [Folder Structure](#folder-structure)
+- [Installation](#installation)
+- [Environment Configuration](#environment-configuration)
+- [Running the App](#running-the-app)
+- [Database Schema](#database-schema)
+- [API Documentation](#api-documentation)
+- [Implementation Status](#implementation-status)
 - [Deployment](#deployment)
 
 ---
 
 ## Tech Stack
 
-| Layer | Teknologi |
+| Layer | Technology |
 |---|---|
-| Bahasa | Go 1.25 |
+| Language | Go 1.25 |
 | HTTP Framework | [Fiber v3](https://github.com/gofiber/fiber) |
-| ORM | [GORM](https://gorm.io) (driver PostgreSQL) |
+| ORM | [GORM](https://gorm.io) (PostgreSQL driver) |
 | Database | PostgreSQL |
 | Auth | JWT (`golang-jwt/jwt/v5`), custom middleware |
-| Hashing Password | bcrypt (`golang.org/x/crypto`) |
+| Password Hashing | bcrypt (`golang.org/x/crypto`) |
 | Migration | [golang-migrate](https://github.com/golang-migrate/migrate) |
 | Env Loader | `godotenv` |
 | Struct Mapping | `jinzhu/copier` |
 
 ---
 
-## Arsitektur
+## Architecture
 
 Layered architecture:
 
 ```
 routes/          → routing & middleware
-controllers/     → parsing request, membentuk response
+controllers/     → request parsing, response shaping
 services/        → business logic
-repositories/    → akses database via GORM
-models/          → definisi struct/tabel
+repositories/    → database access via GORM
+models/          → struct/table definitions
 ```
 
-Dependency injection dirakit manual di `main.go`:
+Dependency injection is wired manually in `main.go`:
 
 ```go
 userRepo := repositories.NewUserRepository()
@@ -62,12 +62,16 @@ listRepo := repositories.NewListRepository()
 listService := services.NewListService(listRepo, boardRepo, listPosRepo)
 listController := controllers.NewListController(listService)
 
-routes.Setup(app, userController, boardController, listController)
+cardRepo := repositories.NewCardRepository()
+cardService := services.NewCardService(cardRepo, listRepo, userRepo)
+cardController := controllers.NewCardController(cardService)
+
+routes.Setup(app, userController, boardController, listController, cardController)
 ```
 
 ---
 
-## Struktur Folder
+## Folder Structure
 
 ```
 Project-Management/
@@ -76,7 +80,8 @@ Project-Management/
 ├── controllers/
 │   ├── user_controller.go
 │   ├── board_controller.go
-│   └── list_controller.go
+│   ├── list_controller.go
+│   └── card_controller.go
 ├── database/
 │   ├── migrations/
 │   └── seed/
@@ -103,13 +108,15 @@ Project-Management/
 │   ├── board_repository.go
 │   ├── board_member_repository.go
 │   ├── list_repository.go
-│   └── list_position_repository.go
+│   ├── list_position_repository.go
+│   └── card_repository.go
 ├── routes/
 │   └── route.go
 ├── services/
 │   ├── user_service.go
 │   ├── board_service.go
-│   └── list_service.go
+│   ├── list_service.go
+│   └── card_service.go
 ├── utils/
 │   ├── jwt.go
 │   ├── password.go
@@ -122,15 +129,15 @@ Project-Management/
 
 ---
 
-## Instalasi
+## Installation
 
-### Prasyarat
+### Prerequisites
 
-- Go 1.25 atau lebih baru
+- Go 1.25 or newer
 - PostgreSQL 13+
 - [`golang-migrate` CLI](https://github.com/golang-migrate/migrate#cli-usage)
 
-### Clone & install dependency
+### Clone & install dependencies
 
 ```bash
 git clone https://github.com/Ciptaaaa/Project-Management.git
@@ -140,9 +147,9 @@ go mod download
 
 ---
 
-## Konfigurasi Environment
+## Environment Configuration
 
-Buat file `.env` di root project:
+Create a `.env` file at the project root:
 
 ```bash
 # Server
@@ -156,22 +163,22 @@ DB_PASSWORD=your_db_password
 DB_NAME=project_management
 
 # JWT
-JWT_SECRET=ganti-dengan-random-string-panjang-dan-unik
+JWT_SECRET=replace-with-a-long-random-unique-string
 JWT_EXPIRY=6h
 REFRESH_TOKEN_EXPIRED=24h
 ```
 
 ---
 
-## Menjalankan Aplikasi
+## Running the App
 
-### 1. Buat database
+### 1. Create the database
 
 ```bash
 createdb project_management
 ```
 
-### 2. Jalankan migration
+### 2. Run migrations
 
 ```bash
 migrate -path database/migrations \
@@ -179,13 +186,13 @@ migrate -path database/migrations \
   up
 ```
 
-### 3. Jalankan server (development)
+### 3. Run the server (development)
 
 ```bash
 go run main.go
 ```
 
-### 4. Build binary untuk production
+### 4. Build a production binary
 
 ```bash
 go build -o bin/server main.go
@@ -194,7 +201,7 @@ go build -o bin/server main.go
 
 ---
 
-## Skema Database
+## Database Schema
 
 ```
 users
@@ -221,17 +228,49 @@ list_positions
  ├─ internal_id (PK), public_id (UUID, unique)
  ├─ board_internal_id → FK boards, ON DELETE CASCADE (unique per board)
  └─ list_order UUID[]
-```
 
-Model `Card`, `CardAssignee`, `CardAttachment`, `CardLabel`, `CardPosition`, `Comment`, `Label` sudah ada di `models/`, tapi belum ada migration untuk tabelnya.
+cards
+ ├─ internal_id (PK), public_id (UUID, unique)
+ ├─ list_internal_id → FK lists, ON DELETE CASCADE
+ └─ title, description, due_date, position
+
+comments
+ ├─ internal_id (PK), public_id (UUID, unique)
+ ├─ card_internal_id → FK cards, ON DELETE CASCADE
+ ├─ user_internal_id → FK users, ON DELETE CASCADE
+ └─ message
+
+labels
+ ├─ internal_id (PK), public_id (UUID, unique)
+ └─ name, color
+
+card_labels (pivot)
+ ├─ card_internal_id  → FK cards,  ON DELETE CASCADE
+ └─ label_internal_id → FK labels, ON DELETE CASCADE
+
+card_assignees (pivot)
+ ├─ card_internal_id → FK cards, ON DELETE CASCADE
+ └─ user_internal_id → FK users, ON DELETE CASCADE
+
+card_attachment
+ ├─ internal_id (PK), public_id (UUID, unique)
+ ├─ card_internal_id → FK cards, ON DELETE CASCADE
+ ├─ user_internal_id → FK users, ON DELETE CASCADE
+ └─ file
+
+card_positions
+ ├─ internal_id (PK), public_id (UUID, unique)
+ ├─ list_internal_id → FK lists, ON DELETE CASCADE (unique per list)
+ └─ card_order UUID[]
+```
 
 ---
 
-## Dokumentasi API
+## API Documentation
 
 Base URL (default): `http://localhost:3030`
 
-### Format Response
+### Response Format
 
 **Success**
 ```json
@@ -243,7 +282,7 @@ Base URL (default): `http://localhost:3030`
 }
 ```
 
-**Success dengan pagination**
+**Success with pagination**
 ```json
 {
   "status": "Success",
@@ -316,20 +355,20 @@ Base URL (default): `http://localhost:3030`
 }
 ```
 
-`access_token` membawa claim `user_id`, `role`, `public_id`, `email`, `exp` (default `JWT_EXPIRY`). `refresh_token` membawa `user_id` + `exp` (default `REFRESH_TOKEN_EXPIRED`).
+`access_token` carries the claims `user_id`, `role`, `public_id`, `email`, `exp` (defaults to `JWT_EXPIRY`). `refresh_token` carries `user_id` + `exp` (defaults to `REFRESH_TOKEN_EXPIRED`).
 
-Semua endpoint di bawah ini butuh header `Authorization: Bearer <access_token>`.
+All endpoints below require the header `Authorization: Bearer <access_token>`.
 
 ### User
 
 #### `GET /api/v1/users/page`
 
-| Param | Tipe | Default | Keterangan |
+| Param | Type | Default | Description |
 |---|---|---|---|
-| `page` | int | `1` | Halaman ke berapa |
-| `limit` | int | `10` | Item per halaman, di-cap maksimal `100` |
-| `filter` | string | `""` | Cari di kolom `name` ATAU `email` (case-insensitive) |
-| `sort` | string | `""` | Nama kolom untuk sorting. Prefix `-` = descending |
+| `page` | int | `1` | Page number |
+| `limit` | int | `10` | Items per page, capped at `100` |
+| `filter` | string | `""` | Searches the `name` OR `email` columns (case-insensitive) |
+| `sort` | string | `""` | Column name to sort by. Prefix `-` for descending |
 
 ```
 GET /api/v1/users/page?page=1&limit=10&filter=cipta&sort=-internal_id
@@ -341,7 +380,7 @@ GET /api/v1/users/page?page=1&limit=10&filter=cipta&sort=-internal_id
 
 #### `PUT /api/v1/users/:id`
 
-Update data user. `:id` = `public_id`.
+Update user data. `:id` = `public_id`.
 
 #### `DELETE /api/v1/users/:id`
 
@@ -356,9 +395,11 @@ Soft delete. `:id` = `internal_id`.
 { "title": "Website Redesign", "description": "...", "due_date": "2026-08-01T00:00:00Z" }
 ```
 
+`owner_public_id` is derived automatically from the JWT claim (`public_id`), not from the request body.
+
 #### `PUT /api/v1/boards/:id`
 
-Update board. `:id` = `public_id`.
+Update a board. `:id` = `public_id`.
 
 #### `POST /api/v1/boards/:id/members`
 
@@ -376,7 +417,22 @@ Update board. `:id` = `public_id`.
 
 #### `GET /api/v1/boards/my`
 
+List of boards owned by the currently authenticated user, paginated.
+
 Query params: `page`, `limit`, `filter`, `sort`.
+
+#### `GET /api/v1/boards/:board_id/lists`
+
+Get all lists belonging to a board. `:board_id` = board `public_id`.
+
+#### `PUT /api/v1/boards/:board_id/position`
+
+Update the order of lists within a board (drag & drop reorder).
+
+**Request body**
+```json
+["list-public-id-1", "list-public-id-2", "list-public-id-3"]
+```
 
 ### List (protected)
 
@@ -389,33 +445,73 @@ Query params: `page`, `limit`, `filter`, `sort`.
 
 #### `PUT /api/v1/lists/:id`
 
-Update list. `:id` = `public_id`.
+Update a list. `:id` = `public_id`.
+
+#### `DELETE /api/v1/lists/:id`
+
+Delete a list. `:id` = `public_id`.
+
+#### `GET /api/v1/lists/:list_id/cards`
+
+Get all cards belonging to a list. `:list_id` = list `public_id`.
+
+### Card (protected)
+
+#### `POST /api/v1/cards`
+
+**Request body**
+```json
+{
+  "list_id": "b3f1...uuid",
+  "title": "Setup CI/CD",
+  "description": "...",
+  "due_date": "2026-08-01T00:00:00Z",
+  "position": 0
+}
+```
+
+`list_id` in the body is the target list's `public_id`.
+
+#### `PUT /api/v1/cards/:id`
+
+Update a card. `:id` = `public_id`. Same body as create; `list_id` is optional when moving the card to a different list.
+
+#### `DELETE /api/v1/cards/:id`
+
+Delete a card. `:id` = `public_id`.
+
+#### `GET /api/v1/cards/:id`
+
+Card detail, including the `assignees`, `attachments`, and `labels` relations (when present).
 
 ---
 
-## Status Implementasi
+## Implementation Status
 
-| Modul | Model | Migration SQL | Repository | Service | Controller | Route |
+| Module | Model | Migration SQL | Repository | Service | Controller | Route |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
 | User / Auth | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | User — Pagination/Filter/Sort | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Board | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Board Member | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | List | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| List Position (reorder) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Card | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Card Assignee / Position | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Label / Comment / Attachment | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| List Position (reorder) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Card | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Card Position (reorder) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Card Assignee | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Card Attachment | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Label / Card Label | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Comment | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Refresh token redeem | – | – | – | ❌ | ❌ | ❌ |
 
 ---
 
 ## Deployment
 
-1. Build binary untuk target OS/arch:
+1. Build a binary for the target OS/arch:
    ```bash
    GOOS=linux GOARCH=amd64 go build -o bin/server main.go
    ```
-2. Siapkan PostgreSQL (managed atau self-hosted) dan jalankan seluruh migration di `database/migrations`.
-3. Set environment variable production lewat secret manager platform (Railway/Fly.io/Docker secrets/systemd EnvironmentFile).
-4. Jalankan binary di belakang reverse proxy (Nginx/Caddy) untuk TLS termination, atau expose lewat platform yang sudah handle TLS (Railway, Fly.io, Render).
+2. Provision PostgreSQL (managed or self-hosted) and run all migrations in `database/migrations`.
+3. Set production environment variables via your platform's secret manager (Railway/Fly.io/Docker secrets/systemd EnvironmentFile).
+4. Run the binary behind a reverse proxy (Nginx/Caddy) for TLS termination, or expose it through a platform that already handles TLS (Railway, Fly.io, Render).
