@@ -130,7 +130,7 @@ func (s *cardService) Create(card *models.Card, listPublicID string) error{
 }
 
 func (s *cardService) Update(card *models.Card, listPublicID string) error{
-	//get old card 
+	//get old card
 	existingCard, err := s.cardRepo.FindByPublicID(card.PublicID.String())
 	if err != nil {
 		return fmt.Errorf("card not found : %w",err)
@@ -149,26 +149,27 @@ func (s *cardService) Update(card *models.Card, listPublicID string) error{
 		}
 	}()
 
-	// If the item is moved to another list, remove it from the previous list and add it to the target list.
-	if existingCard.ListID != newList.InternalID{
+	if existingCard.ListID != newList.InternalID {
 		//delete old list
 		var oldPos models.CardPosition
-		if err := tx.Where("list_internal_id = ?",existingCard.ListID).First(&oldPos).Error; err!=nil{
-			filtered := make(types.UUIDArray,0,len(oldPos.CardOrder))
-			for _,id := range oldPos.CardOrder{
-				if id != existingCard.PublicID{
+		if err := tx.Where("list_internal_id = ?", existingCard.ListID).First(&oldPos).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				tx.Rollback()
+				return fmt.Errorf("failed to get old card position: %w", err)
+			}
+		} else {
+			filtered := make(types.UUIDArray, 0, len(oldPos.CardOrder))
+			for _, id := range oldPos.CardOrder {
+				if id != existingCard.PublicID {
 					filtered = append(filtered, id)
 				}
 			}
 
-			//update 
+			//update
 			if err := tx.Model(&models.CardPosition{}).Where("internal_id = ?", oldPos.InternalID).Update("card_order",types.UUIDArray(filtered)).Error; err!=nil{
 				tx.Rollback()
 				return fmt.Errorf("Failed to update old card position: %w",err)
 			}
-		} else if !errors.Is(err, gorm.ErrRecordNotFound){
-			tx.Rollback()
-			return fmt.Errorf("failed to get old card position: %w",err)
 		}
 		//added new list
 		var newPos models.CardPosition
@@ -194,23 +195,24 @@ func (s *cardService) Update(card *models.Card, listPublicID string) error{
 			return fmt.Errorf("failed to get new card position: %w",res.Error)
 		}
 	}
-	//update data card 
+	//update data card
 	card.InternalID = existingCard.InternalID
 	card.PublicID = existingCard.PublicID
 	card.ListID = existingCard.ListID
+	card.CreatedAt = existingCard.CreatedAt
 
 	if err := tx.Save(card).Error; err !=nil{
 		tx.Rollback()
 		return fmt.Errorf("Failed to update card: %w",err)
 	}
-	//commit 
+	//commit
 	if err := tx.Commit().Error; err !=nil{
 		tx.Rollback()
 		return fmt.Errorf("Transaction commit failed: %w",err)
 	}
 
 	return nil
-	
+
 }
 func (s *cardService) Delete(id uint)error{
 return s.cardRepo.Delete(id)
