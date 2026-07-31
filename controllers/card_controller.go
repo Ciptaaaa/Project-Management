@@ -116,3 +116,34 @@ func (c *CardController) GetCardDetail(ctx fiber.Ctx) error{
 	}
 	return utils.Success(ctx, "Successfully get Card", card)
 }
+
+func (c *CardController) AddCardLabel(ctx fiber.Ctx) error {
+	cardId := ctx.Params("id")
+
+	var body struct {
+		LabelID string `json:"label_id"`
+	}
+
+	if err := ctx.Bind().Body(&body); err != nil {
+		return utils.BadRequest(ctx, "Id not valid", err.Error())
+	}
+	if err := c.service.AddLabel(cardId, body.LabelID); err != nil {
+		return utils.BadRequest(ctx, "Failed added data table", err.Error())
+	}
+	return utils.Success(ctx, "Successfully added data table", nil)
+}
+func (c *CardController) RemoveCardLabel(ctx fiber.Ctx) error {
+	cardId := ctx.Params("id")
+
+	var body struct {
+		LabelID string `json:"label_id"`
+	}
+
+	if err := ctx.Bind().Body(&body); err != nil {
+		return utils.BadRequest(ctx, "Id not valid", err.Error())
+	}
+	if err := c.service.RemoveLabel(cardId, body.LabelID); err != nil {
+		return utils.BadRequest(ctx, "Failed delete label", err.Error())
+	}
+	return utils.Success(ctx, "Successfully delete label", nil)
+}

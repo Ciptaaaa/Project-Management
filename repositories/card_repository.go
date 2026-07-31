@@ -18,6 +18,8 @@ type CardRepository interface {
 	FindByListID(listID string) ([]models.Card,error)
 	FindCardPositionByListID(id int64)(*models.CardPosition, error)
 	UpdatePosition(listID string, position []string)error
+	AddLabel(cardID uint, labelID uint) error
+	RemoveLabel(cardID uint, labelID uint) error
 
 }
 
@@ -89,4 +91,16 @@ func (r *cardRepository) FindCardPositionByListID(id int64)(*models.CardPosition
 	
 func (r *cardRepository) UpdatePosition(listID string, position []string)error{
 	return config.DB.Model(&models.CardPosition{}).Where("list_internal_id = (SELECT internal_id FROM lists where public_id = ?)",listID).Update("card_order",position).Error
+}
+func (r *cardRepository) AddLabel(cardID uint, labelID uint) error {
+	cardLabel := models.CardLabel{
+		CardID:  int64(cardID),
+		LabelID: int64(labelID),
+	}
+	return config.DB.Create(&cardLabel).Error
+}
+
+func (r *cardRepository) RemoveLabel(cardID uint, labelID uint) error {
+	return config.DB.Where("card_internal_id = ? AND label_internal_id = ?", cardID, labelID).
+		Delete(&models.CardLabel{}).Error
 }

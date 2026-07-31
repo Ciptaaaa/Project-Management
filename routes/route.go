@@ -62,10 +62,16 @@ func Setup(app *fiber.App,
 	listGroup.Get("/:list_id/cards",controllerControl.GetListCard)
 
 	//Card group
-
 	cardGroup:= api.Group("/cards")
 	cardGroup.Post("/",controllerControl.CreateCard)
 	cardGroup.Put("/:id",controllerControl.UpdateCard)
 	cardGroup.Delete("/:id",controllerControl.DeleteCard)
 	cardGroup.Get("/:id",controllerControl.GetCardDetail)
+	cardGroup.Post("/:id/labels", controllerControl.AddCardLabel)
+	cardGroup.Delete("/:id/labels", controllerControl.RemoveCardLabel)
+
+	//Upload File
+	// cardGroup.Post("/:id/attachments",controllerControl.UploadAttachments)//upload
+	// cardGroup.Get("/:id/attachments",controllerControl.GetAttachments)//Get list attachments
+	// cardGroup.Delete("/:card_id/attachments/:attachment_id",controllerControl.DeleteAttachments)//delete attachment
 }
