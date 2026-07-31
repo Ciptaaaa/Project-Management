@@ -62,8 +62,10 @@ listRepo := repositories.NewListRepository()
 listService := services.NewListService(listRepo, boardRepo, listPosRepo)
 listController := controllers.NewListController(listService)
 
+labelRepo := repositories.NewLabelRepository()
+
 cardRepo := repositories.NewCardRepository()
-cardService := services.NewCardService(cardRepo, listRepo, userRepo)
+cardService := services.NewCardService(cardRepo, listRepo, userRepo, labelRepo)
 cardController := controllers.NewCardController(cardService)
 
 routes.Setup(app, userController, boardController, listController, cardController)
@@ -109,14 +111,18 @@ Project-Management/
 │   ├── board_member_repository.go
 │   ├── list_repository.go
 │   ├── list_position_repository.go
-│   └── card_repository.go
+│   ├── card_repository.go
+│   ├── label_repository.go
+│   └── attachment_repository.go
 ├── routes/
 │   └── route.go
 ├── services/
 │   ├── user_service.go
 │   ├── board_service.go
 │   ├── list_service.go
-│   └── card_service.go
+│   ├── card_service.go
+│   ├── label_service.go
+│   └── attachment_service.go
 ├── utils/
 │   ├── jwt.go
 │   ├── password.go
@@ -455,6 +461,30 @@ Delete a list. `:id` = `public_id`.
 
 Get all cards belonging to a list. `:list_id` = list `public_id`.
 
+#### `PUT /api/v1/lists/:list_id/positions` 🆕
+
+Reorder cards within a single list (drag & drop, Trello-style). `:list_id` = list `public_id`. The array must contain the `public_id` of **every** card currently in the list, in the new order — the stored order is fully replaced, not merged.
+
+**Request body**
+```json
+{
+  "positions": [
+    "card-public-id-1",
+    "card-public-id-2"
+  ]
+}
+```
+
+**Response `200 OK`**
+```json
+{
+  "status": "Success",
+  "response_code": 200,
+  "message": "Successfully updated card position",
+  "data": null
+}
+```
+
 ### Card (protected)
 
 #### `POST /api/v1/cards`
@@ -470,11 +500,11 @@ Get all cards belonging to a list. `:list_id` = list `public_id`.
 }
 ```
 
-`list_id` in the body is the target list's `public_id`.
+`list_id` in the body is the target list's `public_id`. On creation, the card is automatically appended to the target list's `card_positions` order.
 
 #### `PUT /api/v1/cards/:id`
 
-Update a card. `:id` = `public_id`. Same body as create; `list_id` is optional when moving the card to a different list.
+Update a card. `:id` = `public_id`. Same body as create; `list_id` is optional when moving the card to a different list. Moving a card to a different list automatically removes it from the old list's position order and appends it to the new one.
 
 #### `DELETE /api/v1/cards/:id`
 
@@ -483,6 +513,19 @@ Delete a card. `:id` = `public_id`.
 #### `GET /api/v1/cards/:id`
 
 Card detail, including the `assignees`, `attachments`, and `labels` relations (when present).
+
+#### `POST /api/v1/cards/:id/labels` 
+
+Attach a label to a card. `:id` = card `public_id`.
+
+**Request body**
+```json
+{ "label_id": "b3f1...uuid" }
+```
+
+#### `DELETE /api/v1/cards/:id/labels` 
+
+Detach a label from a card. Same body as above.
 
 ---
 
@@ -497,12 +540,15 @@ Card detail, including the `assignees`, `attachments`, and `labels` relations (w
 | List | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | List Position (reorder) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Card | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Card Position (reorder) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Card Position (reorder) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Card ↔ Label (attach/detach) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Label CRUD (standalone) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Card Attachment | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Card Assignee | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Card Attachment | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Label / Card Label | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Comment | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Refresh token redeem | – | – | – | ❌ | ❌ | ❌ |
+
+> Label and Card Attachment currently expose only their service/repository layer (e.g. label lookups used internally by the card-label attach/detach flow). Standalone endpoints — creating/listing/deleting labels, and uploading/removing attachments — are not implemented yet.
 
 ---
 
