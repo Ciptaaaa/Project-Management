@@ -147,3 +147,26 @@ func (c *CardController) RemoveCardLabel(ctx fiber.Ctx) error {
 	}
 	return utils.Success(ctx, "Successfully delete label", nil)
 }
+func (c *CardController) UpdatePosition(ctx fiber.Ctx) error {
+	listID := ctx.Params("list_id")
+	if _, err := uuid.Parse(listID); err != nil {
+		return utils.BadRequest(ctx, "Id list not valid", err.Error())
+	}
+
+	var req struct {
+		Positions []string `json:"positions"`
+	}
+	if err := ctx.Bind().Body(&req); err != nil {
+		return utils.BadRequest(ctx, "Failed parse data", err.Error())
+	}
+	for _, id := range req.Positions {
+		if _, err := uuid.Parse(id); err != nil {
+			return utils.BadRequest(ctx, "Invalid card id in positions", err.Error())
+		}
+	}
+
+	if err := c.service.UpdatePositions(listID, req.Positions); err != nil {
+		return utils.InternalServerError(ctx, "Failed update card position", err.Error())
+	}
+	return utils.Success(ctx, "Successfully updated card position", nil)
+}

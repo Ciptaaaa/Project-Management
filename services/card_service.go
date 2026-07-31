@@ -23,6 +23,7 @@ type CardService interface {
 	GetByPublicID(publicID string)(*models.Card,error)
 	AddLabel(cardPublicID, labelPublicID string) error
 	RemoveLabel(cardPublicID, labelPublicID string) error
+	UpdatePositions(listPublicID string, cardOrder []string) error
 }
 
 
@@ -275,4 +276,14 @@ func (s *cardService) RemoveLabel(cardPublicID, labelPublicID string) error {
 		return errors.New("label not found")
 	}
 	return s.cardRepo.RemoveLabel(uint(card.InternalID), uint(label.InternalID))
+}
+func (s *cardService) UpdatePositions(listPublicID string, cardOrder []string) error {
+	// verify the list exists before touching card_positions
+	if _, err := s.listRepo.FindByPublicID(listPublicID); err != nil {
+		return errors.New("list not found")
+	}
+	if err := s.cardRepo.UpdatePosition(listPublicID, cardOrder); err != nil {
+		return fmt.Errorf("failed to update card position: %w", err)
+	}
+	return nil
 }

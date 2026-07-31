@@ -41,12 +41,20 @@ func (r *listRepository) UpdatePosition(boardPublicID string, position []string)
 return config.DB.Model(&models.ListPosition{}).Where("board_internal_id = (Select internal_id FROM boards where public_id = ?)", boardPublicID).Update("list_order",position).Error
 }
 
-func (r *listRepository) GetCardPosition(listPublicId string) ([]uuid.UUID, error){
-	var position  models.CardPosition
-	err := config.DB.Joins("JOIN lists ON list.internal_id = card_positions.list_internal_id").Where("list.public_id = ?", listPublicId).Error
-
+func (r *listRepository) GetCardPosition(listPublicId string) ([]uuid.UUID, error) {
+	var position models.CardPosition
+	err := config.DB.
+		Joins("JOIN lists ON lists.internal_id = card_positions.list_internal_id").
+		Where("lists.public_id = ?", listPublicId).
+		First(&position).Error
 	return position.CardOrder, err
 }
+// func (r *listRepository) GetCardPosition(listPublicId string) ([]uuid.UUID, error){
+// 	var position  models.CardPosition
+// 	err := config.DB.Joins("JOIN lists ON list.internal_id = card_positions.list_internal_id").Where("list.public_id = ?", listPublicId).Error
+
+// 	return position.CardOrder, err
+// }
 
 func (r *listRepository) FindByBoardID(boardID string)([]models.List, error){
 var list []models.List

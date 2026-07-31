@@ -6,6 +6,8 @@ import (
 
 	"github.com/Ciptaaaa/Project-Management.git/config"
 	"github.com/Ciptaaaa/Project-Management.git/models"
+	"github.com/Ciptaaaa/Project-Management.git/models/types"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -88,9 +90,19 @@ func (r *cardRepository) FindCardPositionByListID(id int64)(*models.CardPosition
 	}
 	return &position,nil
 }
-	
-func (r *cardRepository) UpdatePosition(listID string, position []string)error{
-	return config.DB.Model(&models.CardPosition{}).Where("list_internal_id = (SELECT internal_id FROM lists where public_id = ?)",listID).Update("card_order",position).Error
+
+func (r *cardRepository) UpdatePosition(listID string, position []string) error {
+	uuids := make(types.UUIDArray, 0, len(position))
+	for _, p := range position {
+		u, err := uuid.Parse(p)
+		if err != nil {
+			return fmt.Errorf("invalid card id %q: %w", p, err)
+		}
+		uuids = append(uuids, u)
+	}
+	return config.DB.Model(&models.CardPosition{}).
+		Where("list_internal_id = (SELECT internal_id FROM lists where public_id = ?)", listID).
+		Update("card_order", uuids).Error
 }
 func (r *cardRepository) AddLabel(cardID uint, labelID uint) error {
 	cardLabel := models.CardLabel{
