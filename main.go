@@ -35,10 +35,12 @@ func main() {
 	listService := services.NewListService(listRepo,boardRepo,listPosRepo)
 	listController := controllers.NewListController(listService)
 	
+	//label
+	labelRepo := repositories.NewLabelRepository()
 
 	//card 
 	cardRepo := repositories.NewCardRepository()
-	cardService := services.NewCardService(cardRepo, listRepo, userRepo)
+	cardService := services.NewCardService(cardRepo, listRepo, userRepo,labelRepo)
 	cardController := controllers.NewCardController(cardService)
 
 	routes.Setup(app, userController, boardController, listController,cardController)
