@@ -73,7 +73,11 @@ func Setup(app *fiber.App,
 	cardGroup.Get("/:id",controllerControl.GetCardDetail)
 	cardGroup.Post("/:id/labels", controllerControl.AddCardLabel)
 	cardGroup.Delete("/:id/labels", controllerControl.RemoveCardLabel)
-	
+
+	//Assign user to card
+	cardGroup.Post("/:id/assignees", controllerControl.AssignCardUser)
+	cardGroup.Delete("/:id/assignees", controllerControl.UnassignCardUser)
+		
 	//Attachment group
 	cardGroup.Post("/:id/attachments", attachmentControl.UploadAttachments)
 	cardGroup.Get("/:id/attachments", attachmentControl.GetAttachments)

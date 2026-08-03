@@ -24,6 +24,8 @@ type CardService interface {
 	AddLabel(cardPublicID, labelPublicID string) error
 	RemoveLabel(cardPublicID, labelPublicID string) error
 	UpdatePositions(listPublicID string, cardOrder []string) error
+	AssignUser(cardPublicID, userPublicID string) error
+	UnassignUser(cardPublicID, userPublicID string) error
 }
 
 
@@ -286,4 +288,28 @@ func (s *cardService) UpdatePositions(listPublicID string, cardOrder []string) e
 		return fmt.Errorf("failed to update card position: %w", err)
 	}
 	return nil
+}
+
+func (s *cardService) AssignUser(cardPublicID, userPublicID string) error {
+	card, err := s.cardRepo.FindByPublicID(cardPublicID)
+	if err != nil {
+		return errors.New("card not found")
+	}
+	user, err := s.userRepo.FindByPublicID(userPublicID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+	return s.cardRepo.AssignUser(uint(card.InternalID), uint(user.InternalID))
+}
+
+func (s *cardService) UnassignUser(cardPublicID, userPublicID string) error {
+	card, err := s.cardRepo.FindByPublicID(cardPublicID)
+	if err != nil {
+		return errors.New("card not found")
+	}
+	user, err := s.userRepo.FindByPublicID(userPublicID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+	return s.cardRepo.UnassignUser(uint(card.InternalID), uint(user.InternalID))
 }

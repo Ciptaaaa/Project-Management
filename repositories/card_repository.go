@@ -22,6 +22,8 @@ type CardRepository interface {
 	UpdatePosition(listID string, position []string)error
 	AddLabel(cardID, labelID uint) error
 	RemoveLabel(cardID, labelID uint) error
+	AssignUser(cardID, userID uint) error
+	UnassignUser(cardID, userID uint) error 
 
 }
 
@@ -53,17 +55,17 @@ func (r *cardRepository) Update(card *models.Card) (*models.Card, error) {
 func(r *cardRepository) Delete(id uint)error{
 	return config.DB.Delete(&models.Card{},id).Error
 }
-func (r *cardRepository)FindByID(id uint)(*models.Card, error){
+func (r *cardRepository) FindByID(id uint) (*models.Card, error) {
 	var card models.Card
-	err := config.DB.Preload("Labels").Preload("Assigness").First(&card,id).Error
-	return &card,err
+	err := config.DB.Preload("Labels").Preload("Assignees").First(&card, id).Error
+	return &card, err
 }
 
 func (r *cardRepository) FindByPublicID(publicID string)(*models.Card, error){
 	var card models.Card
 	if err := config.DB.Preload("Assignees.User",func(tx *gorm.DB) *gorm.DB{
 		return tx.Select("internal_id","public_id","name","email")
-	}).Preload("Attachments").Where("public_id = ?",publicID).First(&card).Error; err!=nil{
+	}).Preload("Attachments").Preload("Labels").Where("public_id = ?",publicID).First(&card).Error; err!=nil{
 		return nil,err
 	}
 	baseUrl := config.AppConfig.APPURL
@@ -115,4 +117,17 @@ func (r *cardRepository) AddLabel(cardID uint, labelID uint) error {
 func (r *cardRepository) RemoveLabel(cardID uint, labelID uint) error {
 	return config.DB.Where("card_internal_id = ? AND label_internal_id = ?", cardID, labelID).
 		Delete(&models.CardLabel{}).Error
+}
+
+func (r *cardRepository) AssignUser(cardID uint, userID uint) error {
+	assignee := models.CardAssignee{
+		CardID: int64(cardID),
+		UserID: int64(userID),
+	}
+	return config.DB.Create(&assignee).Error
+}
+
+func (r *cardRepository) UnassignUser(cardID uint, userID uint) error {
+	return config.DB.Where("card_internal_id = ? AND user_internal_id = ?", cardID, userID).
+		Delete(&models.CardAssignee{}).Error
 }

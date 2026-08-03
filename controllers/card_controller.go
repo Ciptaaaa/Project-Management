@@ -170,3 +170,35 @@ func (c *CardController) UpdatePosition(ctx fiber.Ctx) error {
 	}
 	return utils.Success(ctx, "Successfully updated card position", nil)
 }
+
+func (c *CardController) AssignCardUser(ctx fiber.Ctx) error {
+	cardId := ctx.Params("id")
+
+	var body struct {
+		UserID string `json:"user_id"`
+	}
+
+	if err := ctx.Bind().Body(&body); err != nil {
+		return utils.BadRequest(ctx, "Id not valid", err.Error())
+	}
+	if err := c.service.AssignUser(cardId, body.UserID); err != nil {
+		return utils.BadRequest(ctx, "Failed assign user", err.Error())
+	}
+	return utils.Success(ctx, "Successfully assigned user", nil)
+}
+
+func (c *CardController) UnassignCardUser(ctx fiber.Ctx) error {
+	cardId := ctx.Params("id")
+
+	var body struct {
+		UserID string `json:"user_id"`
+	}
+
+	if err := ctx.Bind().Body(&body); err != nil {
+		return utils.BadRequest(ctx, "Id not valid", err.Error())
+	}
+	if err := c.service.UnassignUser(cardId, body.UserID); err != nil {
+		return utils.BadRequest(ctx, "Failed unassign user", err.Error())
+	}
+	return utils.Success(ctx, "Successfully unassigned user", nil)
+}
