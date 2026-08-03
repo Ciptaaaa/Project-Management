@@ -6,6 +6,7 @@ REST API backend for a Trello-style project management app (board → list → c
 
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
+- [Diagrams](#diagrams)
 - [Folder Structure](#folder-structure)
 - [Installation](#installation)
 - [Environment Configuration](#environment-configuration)
@@ -78,6 +79,111 @@ attachmentController := controllers.NewAttachmentController(attachmentService)
 
 routes.Setup(app, userController, boardController, listController, cardController, labelController, attachmentController)
 ```
+
+---
+
+## Diagrams
+
+### Request flow
+
+```mermaid
+graph TD
+    Client["Client<br/>Postman / frontend app"]
+    Routes["Routes<br/>JWT auth middleware"]
+    Controllers["Controllers<br/>Request parsing"]
+    Services["Services<br/>Business logic"]
+    Repositories["Repositories<br/>GORM database queries"]
+    Postgres[("PostgreSQL")]
+    Cloudinary[("Cloudinary<br/>File storage")]
+
+    Client --> Routes --> Controllers --> Services --> Repositories --> Postgres
+    Services --> Cloudinary
+```
+
+Every request flows top to bottom through the same four layers regardless of resource (Board, List, Card, Label, Attachment). The one exception is `AttachmentService`, which calls Cloudinary directly instead of going through a Repository — file storage isn't relational data, so it doesn't belong behind GORM.
+
+### Entity relationship diagram
+
+```mermaid
+erDiagram
+  USERS ||--o{ BOARDS : owns
+  USERS ||--o{ BOARD_MEMBERS : joins
+  BOARDS ||--o{ BOARD_MEMBERS : has
+  BOARDS ||--o{ LISTS : contains
+  BOARDS ||--|| LIST_POSITIONS : orders
+  LISTS ||--o{ CARDS : contains
+  LISTS ||--|| CARD_POSITIONS : orders
+  CARDS ||--o{ CARD_LABELS : tagged
+  LABELS ||--o{ CARD_LABELS : tags
+  CARDS ||--o{ CARD_ASSIGNEES : assigned
+  USERS ||--o{ CARD_ASSIGNEES : assigned_to
+  CARDS ||--o{ CARD_ATTACHMENT : has
+  USERS ||--o{ CARD_ATTACHMENT : uploads
+  CARDS ||--o{ COMMENTS : has
+  USERS ||--o{ COMMENTS : writes
+
+  USERS {
+    bigint internal_id PK
+    uuid public_id
+    string email
+    string role
+  }
+  BOARDS {
+    bigint internal_id PK
+    uuid public_id
+    string title
+    bigint owner_internal_id FK
+  }
+  LISTS {
+    bigint internal_id PK
+    uuid public_id
+    bigint board_internal_id FK
+  }
+  CARDS {
+    bigint internal_id PK
+    uuid public_id
+    bigint list_internal_id FK
+  }
+  LABELS {
+    bigint internal_id PK
+    uuid public_id
+    string name
+    string color
+  }
+  CARD_ATTACHMENT {
+    bigint internal_id PK
+    uuid public_id
+    string file
+    string cloud_public_id
+  }
+  COMMENTS {
+    bigint internal_id PK
+    uuid public_id
+    string message
+  }
+  BOARD_MEMBERS {
+    bigint board_internal_id FK
+    bigint user_internal_id FK
+  }
+  LIST_POSITIONS {
+    bigint internal_id PK
+    uuid_array list_order
+  }
+  CARD_POSITIONS {
+    bigint internal_id PK
+    uuid_array card_order
+  }
+  CARD_LABELS {
+    bigint card_internal_id FK
+    bigint label_internal_id FK
+  }
+  CARD_ASSIGNEES {
+    bigint card_internal_id FK
+    bigint user_internal_id FK
+  }
+```
+
+`LIST_POSITIONS` and `CARD_POSITIONS` are 1-to-1 with `BOARDS`/`LISTS` — one board has exactly one list order, one list has exactly one card order, used by the drag-and-drop reorder endpoints. `BOARD_MEMBERS`, `CARD_LABELS`, and `CARD_ASSIGNEES` are pure pivot tables (many-to-many) with no `public_id` of their own.
 
 ---
 
