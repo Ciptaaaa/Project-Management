@@ -706,6 +706,19 @@ List every attachment belonging to a card. `:id` = card `public_id`.
 
 Delete an attachment. `:attachment_id` = attachment `public_id`. Removes the file from Cloudinary first, then deletes the database row — if the Cloudinary deletion fails, the row is kept so the reference isn't lost.
 
+#### `POST /api/v1/cards/:id/assignees`
+
+Assign a user to a card. `:id` = card `public_id`.
+
+**Request body**
+```json
+{ "user_id": "b3f1...uuid" }
+```
+
+#### `DELETE /api/v1/cards/:id/assignees`
+
+Unassign a user from a card. Same body as above.
+
 ### Label (protected)
 
 #### `POST /api/v1/labels`
@@ -770,11 +783,11 @@ Delete a label. `:id` = `public_id`. Any card currently using this label loses t
 | Card ↔ Label (attach/detach) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Label CRUD (standalone) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Card Attachment (Cloudinary upload)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Card Assignee | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Card ↔ Assignee (assign/unassign)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Comment | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Refresh token redeem | – | – | – | ❌ | ❌ | ❌ |
 
-All core Trello-style features (boards, lists, cards, drag & drop reordering, labels, file attachments) are complete end-to-end. Remaining gaps are Card Assignee and Comment, which currently have only their model and migration in place.
+All core Trello-style features (boards, lists, cards, drag & drop reordering, labels, file attachments, assignees) are complete end-to-end. The only remaining gap is Comment, which currently has only its model and migration in place.
 
 ---
 
