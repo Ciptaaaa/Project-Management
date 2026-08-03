@@ -20,8 +20,8 @@ type CardRepository interface {
 	FindByListID(listID string) ([]models.Card,error)
 	FindCardPositionByListID(id int64)(*models.CardPosition, error)
 	UpdatePosition(listID string, position []string)error
-	AddLabel(cardID uint, labelID uint) error
-	RemoveLabel(cardID uint, labelID uint) error
+	AddLabel(cardID, labelID uint) error
+	RemoveLabel(cardID, labelID uint) error
 
 }
 

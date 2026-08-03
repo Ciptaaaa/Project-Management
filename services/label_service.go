@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/Ciptaaaa/Project-Management.git/models"
 	"github.com/Ciptaaaa/Project-Management.git/repositories"
+	"github.com/google/uuid"
 )
 
 type LabelService interface {
@@ -10,6 +11,7 @@ type LabelService interface {
 	Update(label *models.Label)error
 	Delete(id uint)error
 	GetByPublicID(publicID string)(*models.Label,error)
+	GetAllLabel()([]models.Label,error)
 }
 
 type labelService struct{
@@ -20,6 +22,9 @@ func NewLabelService(repo repositories.LabelRepository) LabelService{
 }
 
 func (s *labelService) Create(label *models.Label) error {
+	if label.PublicID == uuid.Nil{
+		label.PublicID = uuid.New()
+	}
 	return s.repo.Create(label)
 }
 func (s *labelService) Update(label *models.Label) error {
@@ -30,4 +35,7 @@ func (s *labelService) Delete(id uint) error {
 }
 func (s *labelService) GetByPublicID(publicID string) (*models.Label, error) {
 	return s.repo.FindByPublicID(publicID)
+}
+func (s *labelService) 	GetAllLabel()([]models.Label,error){
+	return s.repo.GetAllLabel()
 }

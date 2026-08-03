@@ -10,6 +10,7 @@ type LabelRepository interface {
 	Update(label *models.Label) error
 	Delete(id uint) error
 	FindByPublicID(publicID string) (*models.Label, error)
+	GetAllLabel()([]models.Label,error)
 }
 
 type labelRepository struct{}
@@ -34,4 +35,10 @@ func (r *labelRepository) FindByPublicID(publicID string) (*models.Label, error)
 	var label models.Label
 	err := config.DB.Where("public_id = ?", publicID).First(&label).Error
 	return &label, err
+}
+
+func (r *labelRepository) GetAllLabel()([]models.Label,error){
+	var labels []models.Label
+	err := config.DB.Order("internal_id ASC").Find(&labels).Error
+	return labels,err
 }

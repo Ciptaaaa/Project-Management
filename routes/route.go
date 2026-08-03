@@ -13,7 +13,9 @@ func Setup(app *fiber.App,
 	 userControl *controllers.UserController,
 	 boardControl *controllers.BoardController,
 	 listControl *controllers.ListController,
-	 controllerControl *controllers.CardController){
+	 controllerControl *controllers.CardController,
+	 labelControl *controllers.LabelController,
+	 ){
 	err := godotenv.Load()
 	if err != nil{
 		log.Fatal("Error Loading .env file")
@@ -70,6 +72,14 @@ func Setup(app *fiber.App,
 	cardGroup.Get("/:id",controllerControl.GetCardDetail)
 	cardGroup.Post("/:id/labels", controllerControl.AddCardLabel)
 	cardGroup.Delete("/:id/labels", controllerControl.RemoveCardLabel)
+
+	//label group 
+	labelGroup := api.Group("/labels")
+	labelGroup.Post("/",labelControl.CreateLabel)
+	labelGroup.Get("/",labelControl.GetAllLabels)
+	labelGroup.Get("/:id",labelControl.GetLabelByID)
+	labelGroup.Put("/:id",labelControl.UpdateLabel)
+	labelGroup.Delete("/:id",labelControl.DeleteLabel)
 
 	//Upload File
 	// cardGroup.Post("/:id/attachments",controllerControl.UploadAttachments)//upload
