@@ -1,0 +1,1050 @@
+{
+  "info": {
+    "_postman_id": "2a0117be-dbfd-4c15-bdf0-caac7a7256b5",
+    "name": "project_management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "17938756",
+    "_collection_link": "https://go.postman.co/collection/17938756-2a0117be-dbfd-4c15-bdf0-caac7a7256b5?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "USER",
+      "item": [
+        {
+          "name": "Registration",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"JhonDoe\",\r\n    \"email\":\"JhonDoe@gmail.com\",\r\n    \"password\":\"Example123\",\r\n    \"role\":\"user\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:3030/v1/auth/register",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "3030",
+              "path": ["v1", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();\r",
+                  "pm.environment.set(\"access_token\", res.data.access_token);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\r\n   \"email\":\"jhondoe@gmail.com\",\r\n    \"password\":\"Example123\"\r\n   \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GETUSER",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{json_web_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/aefaace7-4216-47a5-821c-efa643727511",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "aefaace7-4216-47a5-821c-efa643727511"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET USER PAGINATION",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{json_web_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\r\n    \"email\":\"tiffanysayang@gmail.com\",\r\n    \"password\":\"Tiffanysayang123\",\r\n   \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/page?filter=&sort=-id&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "page"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": ""
+                },
+                {
+                  "key": "sort",
+                  "value": "-id"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{bearer_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\r\n    \"email\":\"tiffanysayang@gmail.com\",\r\n    \"password\":\"Tiffanysayang123\",\r\n   \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "5"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{json_web_token}} ",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\r\n    \"name\":\"Tiffany Ronaldo\"\r\n    \r\n   \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/aefaace7-4216-47a5-821c-efa643727511",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "aefaace7-4216-47a5-821c-efa643727511"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "BOARD",
+      "item": [
+        {
+          "name": "CREATE BOARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{json_web_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\r\n    \"title\":\"Project Management add member\",\r\n    \"description\":\"ini adalah description project Management add member\",\r\n    \"due_date\":\"2025-11-10T08:00:00+07:00\"\r\n   \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/boards",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "boards"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT UPDATE BOARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer {{json_web_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\r\n    \"title\":\"Project Management updated\",\r\n    \"description\":\"ini adalah description project Management updated\",\r\n    \"due_date\":\"2025-08-09T12:00:00+07:00\"\r\n   \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/boards/a46fddd3-bb32-4b6f-bf10-b86ec22c9e6f",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "boards",
+                "a46fddd3-bb32-4b6f-bf10-b86ec22c9e6f"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ADD MEMBER BOARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer ",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\r\n    \"3583a10d-58bb-4c64-9d58-a6751c4195da\",\"560fccc4-ec62-4076-be50-de9f915a7f2b\"\r\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/boards/59a7aae5-c842-4513-9f07-9343dc0e2ab3/members",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "boards",
+                "59a7aae5-c842-4513-9f07-9343dc0e2ab3",
+                "members"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "REMOVE MEMBER BOARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer ",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\r\n    \"560fccc4-ec62-4076-be50-de9f915a7f2b\"\r\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/boards/59a7aae5-c842-4513-9f07-9343dc0e2ab3/members",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "boards",
+                "59a7aae5-c842-4513-9f07-9343dc0e2ab3",
+                "members"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET MY BOARD",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer ",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}http://127.0.0.1:3030/api/v1/boards/my",
+              "protocol": "{{base_url}}http",
+              "host": ["127", "0", "0", "1"],
+              "port": "3030",
+              "path": ["api", "v1", "boards", "my"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET LIST ON BOARD",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/boards/a46fddd3-bb32-4b6f-bf10-b86ec22c9e6f/lists",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "boards",
+                "a46fddd3-bb32-4b6f-bf10-b86ec22c9e6f",
+                "lists"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT UPDATELIST ON BOARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "[\r\n  \"d496ec82-722d-4e50-9359-0e0586e583a3\",\r\n  \"c314666a-9016-4a4c-b359-fb6967915b99\",\r\n  \"8d829174-5bca-4b73-b19c-132970cec5bc\"          \r\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/boards/a46fddd3-bb32-4b6f-bf10-b86ec22c9e6f/position",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "boards",
+                "a46fddd3-bb32-4b6f-bf10-b86ec22c9e6f",
+                "position"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "LISTS",
+      "item": [
+        {
+          "name": "POST CREATE_LIST",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer ",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"board_public_id\":\"a46fddd3-bb32-4b6f-bf10-b86ec22c9e6f\",\r\n    \"title\":\"Inprogress\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lists",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lists"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT UPDATE_LIST",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer ",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\":\"Backlog 1 Updated banget\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lists/778d2fa5-73a1-4902-b94a-4e0246abd59a",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "lists",
+                "778d2fa5-73a1-4902-b94a-4e0246abd59a"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE DELETE_LIST",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer ",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lists/778d2fa5-73a1-4902-b94a-4e0246abd59a",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "lists",
+                "778d2fa5-73a1-4902-b94a-4e0246abd59a"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET LIST CARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lists/8d829174-5bca-4b73-b19c-132970cec5bc/cards",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "lists",
+                "8d829174-5bca-4b73-b19c-132970cec5bc",
+                "cards"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UPDATE POSITION",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"positions\": [\r\n    \"19fa6abb-fe2a-4301-9820-c92e73d09b09\",\r\n    \"8c0544f9-9618-4e9a-b152-c7c75b59a145\"\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lists/8d829174-5bca-4b73-b19c-132970cec5bc/positions",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "lists",
+                "8d829174-5bca-4b73-b19c-132970cec5bc",
+                "positions"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CARDS",
+      "item": [
+        {
+          "name": "CREATE CARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"list_id\":\"8d829174-5bca-4b73-b19c-132970cec5bc\",\r\n    \"title\":\"Membuat API Create2\",\r\n    \"description\":\"membuat fungsi create card\",\r\n    \"due_date\":\"2026-12-30T23:59:59Z\",\r\n    \"position\":0\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/cards",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cards"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UPDATE CARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"list_id\":\"8d829174-5bca-4b73-b19c-132970cec5bc\",\r\n    \"title\":\"Membuat API Create2 now checked created_at cipta\",\r\n    \"description\":\"membuat fungsi create card now checked created_at cipta\",\r\n    \"due_date\":\"2026-12-30T23:59:59Z\",\r\n    \"position\":0\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/cards/8c0544f9-9618-4e9a-b152-c7c75b59a145",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "cards",
+                "8c0544f9-9618-4e9a-b152-c7c75b59a145"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE CARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/cards/3e473eef-ee4f-422b-b07f-621311be0e78",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "cards",
+                "3e473eef-ee4f-422b-b07f-621311be0e78"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET DETAIL CARD",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cards/8c0544f9-9618-4e9a-b152-c7c75b59a145",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "cards",
+                "8c0544f9-9618-4e9a-b152-c7c75b59a145"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "LABEL",
+      "item": [
+        {
+          "name": "POST LABEL",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Stuck\",\r\n  \"color\": \"#FFFFF\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/labels",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "labels"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Labels All",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/labels",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "labels"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET LABEL BY ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/labels/00000000-0000-0000-0000-000000000000",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "labels",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UPDATE LABEL",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Urgent banget\",\r\n    \"color\": \"#FF3210\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/labels/00000000-0000-0000-0000-000000000000",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "labels",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE LABEL",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/labels/00000000-0000-0000-0000-000000000000",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "labels",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ REST API backend for a Trello-style project management app (board → list → c
 - [Installation](#installation)
 - [Environment Configuration](#environment-configuration)
 - [Running the App](#running-the-app)
+- [Postman Collection](#postman-collection)
 - [Database Schema](#database-schema)
 - [API Documentation](#api-documentation)
 - [Implementation Status](#implementation-status)
@@ -19,17 +20,17 @@ REST API backend for a Trello-style project management app (board → list → c
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Language | Go 1.25 |
-| HTTP Framework | [Fiber v3](https://github.com/gofiber/fiber) |
-| ORM | [GORM](https://gorm.io) (PostgreSQL driver) |
-| Database | PostgreSQL |
-| Auth | JWT (`golang-jwt/jwt/v5`), custom middleware |
-| Password Hashing | bcrypt (`golang.org/x/crypto`) |
-| Migration | [golang-migrate](https://github.com/golang-migrate/migrate) |
-| Env Loader | `godotenv` |
-| Struct Mapping | `jinzhu/copier` |
+| Layer            | Technology                                                  |
+| ---------------- | ----------------------------------------------------------- |
+| Language         | Go 1.25                                                     |
+| HTTP Framework   | [Fiber v3](https://github.com/gofiber/fiber)                |
+| ORM              | [GORM](https://gorm.io) (PostgreSQL driver)                 |
+| Database         | PostgreSQL                                                  |
+| Auth             | JWT (`golang-jwt/jwt/v5`), custom middleware                |
+| Password Hashing | bcrypt (`golang.org/x/crypto`)                              |
+| Migration        | [golang-migrate](https://github.com/golang-migrate/migrate) |
+| Env Loader       | `godotenv`                                                  |
+| Struct Mapping   | `jinzhu/copier`                                             |
 
 ---
 
@@ -63,12 +64,14 @@ listService := services.NewListService(listRepo, boardRepo, listPosRepo)
 listController := controllers.NewListController(listService)
 
 labelRepo := repositories.NewLabelRepository()
+labelService := services.NewLabelService(labelRepo)
+labelController := controllers.NewLabelController(labelService)
 
 cardRepo := repositories.NewCardRepository()
 cardService := services.NewCardService(cardRepo, listRepo, userRepo, labelRepo)
 cardController := controllers.NewCardController(cardService)
 
-routes.Setup(app, userController, boardController, listController, cardController)
+routes.Setup(app, userController, boardController, listController, cardController, labelController)
 ```
 
 ---
@@ -83,11 +86,16 @@ Project-Management/
 │   ├── user_controller.go
 │   ├── board_controller.go
 │   ├── list_controller.go
-│   └── card_controller.go
+│   ├── card_controller.go
+│   └── label_controller.go
 ├── database/
 │   ├── migrations/
 │   └── seed/
 │       └── seed_admin.go
+├── docs/
+│   └── postman/
+│       ├── Project-Management-API.postman_collection.json
+│       └── Local-Dev.postman_environment.json
 ├── middleware/
 │   └── jwt.go
 ├── models/
@@ -207,6 +215,22 @@ go build -o bin/server main.go
 
 ---
 
+## Postman Collection
+
+A ready-to-use Postman collection and environment are provided under `docs/postman/`:
+
+- `docs/postman/Project-Management-API.postman_collection.json` — all endpoints, grouped by resource (Auth, User, Board, List, Card, Label)
+- `docs/postman/Local-Dev.postman_environment.json` — `base_url` and `access_token` variables
+
+### Setup
+
+1. Open Postman → **Import** → drag & drop both files (or **File → Import**)
+2. Select the **Local Dev** environment from the dropdown in the top-right corner
+3. Run **Auth → Login** — the response's `access_token` is captured automatically into the environment via a post-response script, so every other request picks it up through the `{{access_token}}` variable
+4. All request URLs use `{{base_url}}` — update it in the environment to point at staging/production instead of editing every request individually
+
+---
+
 ## Database Schema
 
 ```
@@ -279,27 +303,37 @@ Base URL (default): `http://localhost:3030`
 ### Response Format
 
 **Success**
+
 ```json
 {
   "status": "Success",
   "response_code": 200,
   "message": "...",
-  "data": { }
+  "data": {}
 }
 ```
 
 **Success with pagination**
+
 ```json
 {
   "status": "Success",
   "response_code": 200,
   "message": "...",
-  "data": [ ],
-  "meta": { "page": 1, "limit": 10, "total": 100, "total_page": 10, "filter": "", "sort": "" }
+  "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "total_page": 10,
+    "filter": "",
+    "sort": ""
+  }
 }
 ```
 
 **Error**
+
 ```json
 {
   "status": "Error Bad Request",
@@ -314,11 +348,13 @@ Base URL (default): `http://localhost:3030`
 #### `POST /v1/auth/register`
 
 **Request body**
+
 ```json
 { "name": "Cipta", "email": "cipta@example.com", "password": "secret123" }
 ```
 
 **Response `200 OK`**
+
 ```json
 {
   "status": "Success",
@@ -338,11 +374,13 @@ Base URL (default): `http://localhost:3030`
 #### `POST /v1/auth/login`
 
 **Request body**
+
 ```json
 { "email": "cipta@example.com", "password": "secret123" }
 ```
 
 **Response `200 OK`**
+
 ```json
 {
   "status": "Success",
@@ -369,12 +407,12 @@ All endpoints below require the header `Authorization: Bearer <access_token>`.
 
 #### `GET /api/v1/users/page`
 
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `page` | int | `1` | Page number |
-| `limit` | int | `10` | Items per page, capped at `100` |
-| `filter` | string | `""` | Searches the `name` OR `email` columns (case-insensitive) |
-| `sort` | string | `""` | Column name to sort by. Prefix `-` for descending |
+| Param    | Type   | Default | Description                                               |
+| -------- | ------ | ------- | --------------------------------------------------------- |
+| `page`   | int    | `1`     | Page number                                               |
+| `limit`  | int    | `10`    | Items per page, capped at `100`                           |
+| `filter` | string | `""`    | Searches the `name` OR `email` columns (case-insensitive) |
+| `sort`   | string | `""`    | Column name to sort by. Prefix `-` for descending         |
 
 ```
 GET /api/v1/users/page?page=1&limit=10&filter=cipta&sort=-internal_id
@@ -397,8 +435,13 @@ Soft delete. `:id` = `internal_id`.
 #### `POST /api/v1/boards`
 
 **Request body**
+
 ```json
-{ "title": "Website Redesign", "description": "...", "due_date": "2026-08-01T00:00:00Z" }
+{
+  "title": "Website Redesign",
+  "description": "...",
+  "due_date": "2026-08-01T00:00:00Z"
+}
 ```
 
 `owner_public_id` is derived automatically from the JWT claim (`public_id`), not from the request body.
@@ -410,6 +453,7 @@ Update a board. `:id` = `public_id`.
 #### `POST /api/v1/boards/:id/members`
 
 **Request body**
+
 ```json
 ["b3f1...uuid", "a2e2...uuid"]
 ```
@@ -417,6 +461,7 @@ Update a board. `:id` = `public_id`.
 #### `DELETE /api/v1/boards/:id/members`
 
 **Request body**
+
 ```json
 ["b3f1...uuid", "a2e2...uuid"]
 ```
@@ -436,6 +481,7 @@ Get all lists belonging to a board. `:board_id` = board `public_id`.
 Update the order of lists within a board (drag & drop reorder).
 
 **Request body**
+
 ```json
 ["list-public-id-1", "list-public-id-2", "list-public-id-3"]
 ```
@@ -445,6 +491,7 @@ Update the order of lists within a board (drag & drop reorder).
 #### `POST /api/v1/lists`
 
 **Request body**
+
 ```json
 { "board_public_id": "b3f1...uuid", "title": "To Do" }
 ```
@@ -461,21 +508,20 @@ Delete a list. `:id` = `public_id`.
 
 Get all cards belonging to a list. `:list_id` = list `public_id`.
 
-#### `PUT /api/v1/lists/:list_id/positions` 🆕
+#### `PUT /api/v1/lists/:list_id/positions`
 
 Reorder cards within a single list (drag & drop, Trello-style). `:list_id` = list `public_id`. The array must contain the `public_id` of **every** card currently in the list, in the new order — the stored order is fully replaced, not merged.
 
 **Request body**
+
 ```json
 {
-  "positions": [
-    "card-public-id-1",
-    "card-public-id-2"
-  ]
+  "positions": ["card-public-id-1", "card-public-id-2"]
 }
 ```
 
 **Response `200 OK`**
+
 ```json
 {
   "status": "Success",
@@ -490,6 +536,7 @@ Reorder cards within a single list (drag & drop, Trello-style). `:list_id` = lis
 #### `POST /api/v1/cards`
 
 **Request body**
+
 ```json
 {
   "list_id": "b3f1...uuid",
@@ -514,41 +561,90 @@ Delete a card. `:id` = `public_id`.
 
 Card detail, including the `assignees`, `attachments`, and `labels` relations (when present).
 
-#### `POST /api/v1/cards/:id/labels` 
+#### `POST /api/v1/cards/:id/labels`
 
 Attach a label to a card. `:id` = card `public_id`.
 
 **Request body**
+
 ```json
 { "label_id": "b3f1...uuid" }
 ```
 
-#### `DELETE /api/v1/cards/:id/labels` 
+#### `DELETE /api/v1/cards/:id/labels`
 
 Detach a label from a card. Same body as above.
+
+### Label (protected)
+
+#### `POST /api/v1/labels`
+
+Create a new label. `name` and `color` are required.
+
+**Request body**
+
+```json
+{ "name": "Urgent", "color": "#FF0000" }
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "status": "Success",
+  "response_code": 200,
+  "message": "Successfully Created Label",
+  "data": {
+    "internal_id": 1,
+    "public_id": "b3f1...uuid",
+    "name": "Urgent",
+    "color": "#FF0000"
+  }
+}
+```
+
+#### `GET /api/v1/labels`
+
+List every label available in the system.
+
+#### `GET /api/v1/labels/:id`
+
+Get a single label. `:id` = `public_id`.
+
+#### `PUT /api/v1/labels/:id`
+
+Partially update a label — only the fields present in the body are changed. `:id` = `public_id`.
+
+**Request body**
+
+```json
+{ "name": "Stuck", "color": "#FF3210" }
+```
+
+#### `DELETE /api/v1/labels/:id`
+
+Delete a label. `:id` = `public_id`. Any card currently using this label loses the association automatically (`ON DELETE CASCADE` on `card_labels`).
 
 ---
 
 ## Implementation Status
 
-| Module | Model | Migration SQL | Repository | Service | Controller | Route |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| User / Auth | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| User — Pagination/Filter/Sort | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Board | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Board Member | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| List | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| List Position (reorder) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Card | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Card Position (reorder) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Card ↔ Label (attach/detach) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Label CRUD (standalone) | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Card Attachment | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Card Assignee | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Comment | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Refresh token redeem | – | – | – | ❌ | ❌ | ❌ |
-
-> Label and Card Attachment currently expose only their service/repository layer (e.g. label lookups used internally by the card-label attach/detach flow). Standalone endpoints — creating/listing/deleting labels, and uploading/removing attachments — are not implemented yet.
+| Module                        | Model | Migration SQL | Repository | Service | Controller | Route |
+| ----------------------------- | :---: | :-----------: | :--------: | :-----: | :--------: | :---: |
+| User / Auth                   |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| User — Pagination/Filter/Sort |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| Board                         |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| Board Member                  |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| List                          |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| List Position (reorder)       |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| Card                          |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| Card Position (reorder)       |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| Card ↔ Label (attach/detach)  |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| **Label CRUD (standalone)**   |  ✅   |      ✅       |     ✅     |   ✅    |     ✅     |  ✅   |
+| Card Attachment               |  ✅   |      ✅       |     ✅     |   ✅    |     ❌     |  ❌   |
+| Card Assignee                 |  ✅   |      ✅       |     ❌     |   ❌    |     ❌     |  ❌   |
+| Comment                       |  ✅   |      ✅       |     ❌     |   ❌    |     ❌     |  ❌   |
+| Refresh token redeem          |   –   |       –       |     –      |   ❌    |     ❌     |  ❌   |
 
 ---
 
