@@ -1,0 +1,1 @@
+ALTER TABLE card_attachment ADD COLUMN cloud_public_id VARCHAR(255) NOT NULL DEFAULT '';

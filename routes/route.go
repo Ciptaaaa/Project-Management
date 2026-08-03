@@ -15,6 +15,7 @@ func Setup(app *fiber.App,
 	 listControl *controllers.ListController,
 	 controllerControl *controllers.CardController,
 	 labelControl *controllers.LabelController,
+	 attachmentControl *controllers.AttachmentController,
 	 ){
 	err := godotenv.Load()
 	if err != nil{
@@ -62,7 +63,7 @@ func Setup(app *fiber.App,
 	listGroup.Put("/:id",listControl.UpdateList)
 	listGroup.Delete("/:id",listControl.DeleteList)
 	listGroup.Get("/:list_id/cards",controllerControl.GetListCard)
-	listGroup.Put("/:list_id/positions",controllerControl.UpdatePosition) 
+	listGroup.Put("/:list_id/positions",controllerControl.UpdatePosition) 	
 
 	//Card group
 	cardGroup:= api.Group("/cards")
@@ -72,6 +73,11 @@ func Setup(app *fiber.App,
 	cardGroup.Get("/:id",controllerControl.GetCardDetail)
 	cardGroup.Post("/:id/labels", controllerControl.AddCardLabel)
 	cardGroup.Delete("/:id/labels", controllerControl.RemoveCardLabel)
+	
+	//Attachment group
+	cardGroup.Post("/:id/attachments", attachmentControl.UploadAttachments)
+	cardGroup.Get("/:id/attachments", attachmentControl.GetAttachments)
+	cardGroup.Delete("/:card_id/attachments/:attachment_id", attachmentControl.DeleteAttachments)
 
 	//label group 
 	labelGroup := api.Group("/labels")
@@ -80,6 +86,8 @@ func Setup(app *fiber.App,
 	labelGroup.Get("/:id",labelControl.GetLabelByID)
 	labelGroup.Put("/:id",labelControl.UpdateLabel)
 	labelGroup.Delete("/:id",labelControl.DeleteLabel)
+
+	
 
 	//Upload File
 	// cardGroup.Post("/:id/attachments",controllerControl.UploadAttachments)//upload

@@ -69,7 +69,7 @@ func (r *cardRepository) FindByPublicID(publicID string)(*models.Card, error){
 	baseUrl := config.AppConfig.APPURL
 
 	for i := range card.Attachments{
-		card.Attachments[i].FileURL = fmt.Sprintf("%s/files/%s ",baseUrl,
+		card.Attachments[i].File = fmt.Sprintf("%s/files/%s ",baseUrl,
 		filepath.Base(card.Attachments[i].File),
 	)
 	}

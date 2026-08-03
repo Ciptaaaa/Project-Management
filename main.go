@@ -45,8 +45,13 @@ func main() {
 	cardService := services.NewCardService(cardRepo, listRepo, userRepo,labelRepo)
 	cardController := controllers.NewCardController(cardService)
 
+	//attachment
+	attachmentRepo := repositories.NewAttachmentRepository(config.DB) 
+	attachmentService := services.NewAttachmentService(attachmentRepo, cardRepo, userRepo)
+	attachmentController := controllers.NewAttachmentController(attachmentService)
+
 	
-	routes.Setup(app, userController, boardController, listController,cardController,labelController)
+	routes.Setup(app, userController, boardController, listController,cardController,labelController,attachmentController)
 
 	port:= config.AppConfig.AppPort
 	log.Println("Server is running on port:",port)
