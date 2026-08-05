@@ -50,8 +50,13 @@ func main() {
 	attachmentService := services.NewAttachmentService(attachmentRepo, cardRepo, userRepo)
 	attachmentController := controllers.NewAttachmentController(attachmentService)
 
+	//comment
+	commentRepo := repositories.NewCommentRepository()
+	commentService := services.NewCommentService(commentRepo, cardRepo, userRepo, listRepo, boardRepo) 
+	commentController := controllers.NewCommentController(commentService)
+
 	
-	routes.Setup(app, userController, boardController, listController,cardController,labelController,attachmentController)
+	routes.Setup(app, userController, boardController, listController,cardController,labelController,attachmentController, commentController)
 
 	port:= config.AppConfig.AppPort
 	log.Println("Server is running on port:",port)

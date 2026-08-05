@@ -16,6 +16,7 @@ func Setup(app *fiber.App,
 	 controllerControl *controllers.CardController,
 	 labelControl *controllers.LabelController,
 	 attachmentControl *controllers.AttachmentController,
+	 commentControl *controllers.CommentController,
 	 ){
 	err := godotenv.Load()
 	if err != nil{
@@ -82,6 +83,11 @@ func Setup(app *fiber.App,
 	cardGroup.Post("/:id/attachments", attachmentControl.UploadAttachments)
 	cardGroup.Get("/:id/attachments", attachmentControl.GetAttachments)
 	cardGroup.Delete("/:card_id/attachments/:attachment_id", attachmentControl.DeleteAttachments)
+
+	//coment group
+	cardGroup.Post("/:id/comments", commentControl.CreateComment)
+	cardGroup.Get("/:id/comments", commentControl.GetComments)
+	cardGroup.Delete("/:id/comments/:comment_id", commentControl.DeleteComment)
 
 	//label group 
 	labelGroup := api.Group("/labels")
