@@ -507,6 +507,29 @@ Base URL (default): `http://localhost:3030`
 
 `access_token` carries the claims `user_id`, `role`, `public_id`, `email`, `exp` (defaults to `JWT_EXPIRY`). `refresh_token` carries `user_id` + `exp` (defaults to `REFRESH_TOKEN_EXPIRED`).
 
+#### `POST /v1/auth/refresh`
+
+Exchange a still-valid `refresh_token` for a new `access_token`, without re-entering credentials — the client calls this on a `401` from any protected endpoint, then retries the original request. Public endpoint, not behind `JWTProtected()`, since its whole purpose is recovering from an expired access token.
+
+**Request body**
+```json
+{ "refresh_token": "eyJhbGciOi..." }
+```
+
+**Response `200 OK`**
+```json
+{
+  "status": "Success",
+  "response_code": 200,
+  "message": "Token refreshed successfully",
+  "data": {
+    "access_token": "eyJhbGciOi..."
+  }
+}
+```
+
+If `refresh_token` itself is expired or invalid, this returns `401` — at that point the client should redirect to login, since there's no further token to fall back on.
+
 All endpoints below require the header `Authorization: Bearer <access_token>`.
 
 ### User
@@ -719,6 +742,46 @@ Assign a user to a card. `:id` = card `public_id`.
 
 Unassign a user from a card. Same body as above.
 
+#### `POST /api/v1/cards/:id/comments`
+
+Add a comment to a card. `:id` = card `public_id`. The author is derived from the JWT claim (`public_id`), not from the request body.
+
+**Request body**
+```json
+{ "message": "Looks good, just double check the edge cases" }
+```
+
+**Response `200 OK`**
+```json
+{
+  "status": "Success",
+  "response_code": 200,
+  "message": "Successfully created comment",
+  "data": {
+    "internal_id": 1,
+    "public_id": "b3f1...uuid",
+    "card_internal_id": 5,
+    "user_internal_id": 1,
+    "message": "Looks good, just double check the edge cases",
+    "created_at": "2026-08-05T11:14:06Z",
+    "user": {
+      "internal_id": 1,
+      "public_id": "b3f1...uuid",
+      "name": "Cipta",
+      "email": "cipta@example.com"
+    }
+  }
+}
+```
+
+#### `GET /api/v1/cards/:id/comments`
+
+List every comment on a card, oldest first, including the `user` who wrote each one.
+
+#### `DELETE /api/v1/cards/:id/comments/:comment_id`
+
+Delete a comment. `:comment_id` = comment `public_id`. Allowed only for the comment's author, the owning board's owner, or a site admin (`role: "admin"`) — anyone else gets rejected.
+
 ### Label (protected)
 
 #### `POST /api/v1/labels`
@@ -784,10 +847,10 @@ Delete a label. `:id` = `public_id`. Any card currently using this label loses t
 | Label CRUD (standalone) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Card Attachment (Cloudinary upload)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Card ↔ Assignee (assign/unassign)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Comment | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Refresh token redeem | – | – | – | ❌ | ❌ | ❌ |
+| **Comment** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Refresh token redeem** | – | – | – | ✅ | ✅ | ✅ |
 
-All core Trello-style features (boards, lists, cards, drag & drop reordering, labels, file attachments, assignees) are complete end-to-end. The only remaining gap is Comment, which currently has only its model and migration in place.
+Every planned feature is now complete end-to-end — boards, lists, cards, drag & drop reordering, labels, file attachments, assignees, comments, and silent token refresh.
 
 ---
 
