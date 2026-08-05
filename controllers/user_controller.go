@@ -177,3 +177,33 @@ if err := c.service.Delete(uint(id));err!=nil{
 }
 return utils.Success(ctx, "Successfully Delete user",id)
 }
+
+func (c *UserController) RefreshToken(ctx fiber.Ctx) error {
+	var body struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := ctx.Bind().Body(&body); err != nil {
+		return utils.BadRequest(ctx, "Invalid Request", err.Error())
+	}
+	if body.RefreshToken == "" {
+		return utils.BadRequest(ctx, "Invalid Request", "refresh_token is required")
+	}
+
+	userID, err := utils.ParseRefreshToken(body.RefreshToken)
+	if err != nil {
+		return utils.Unauthorized(ctx, "Refresh failed", err.Error())
+	}
+	user, err := c.service.GetByID(uint(userID))
+	if err != nil {
+		return utils.Unauthorized(ctx, "Refresh failed", "user not found")
+	}
+
+	newAccessToken, err := utils.GenerateToken(user.InternalID, user.Role, user.Email, user.PublicID)
+	if err != nil {
+		return utils.BadRequest(ctx, "Failed to generate token", err.Error())
+	}
+
+	return utils.Success(ctx, "Token refreshed successfully", fiber.Map{
+		"access_token": newAccessToken,
+	})
+}

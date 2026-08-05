@@ -25,6 +25,7 @@ func Setup(app *fiber.App,
 
 	app.Post("/v1/auth/register", userControl.Register)
 	app.Post("/v1/auth/login", userControl.Login)
+	app.Post("/v1/auth/refresh", userControl.RefreshToken)
 
 	//JWT PROTECTED ROUTES v2 
 // 	api:= app.Group("/api/v1", jwtware.New(jwtware.Config{
