@@ -22,6 +22,7 @@ type Config struct{
 	DBPort string
 	DBUser string
 	DBPassword string
+	DBSSLMode string
 	DBName string
 	JWTSecret string
 	// JWTExpireMinutes string
@@ -44,6 +45,7 @@ func LoadEnv() {
 		DBUser: getEnv("DB_USER","postgres"),
 		DBPassword: getEnv("DB_PASSWORD","password"),
 		DBName: getEnv("DB_NAME","project_management"),
+		DBSSLMode: getEnv("DB_SSLMODE","disable"), 
 		JWTSecret: getEnv("JWT_SECRET","secret"),
 		JWTExpire: getEnv("JWT_EXPIRY","6h"),
 		// JWTExpireMinutes: getEnv("JWT_EXPIRY_MINUTES","60"),
@@ -65,8 +67,8 @@ if exist{
 
 func ConnectDB(){
 	connect:= AppConfig
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", connect.DBHost, connect.DBPort, connect.DBUser,connect.DBPassword,connect.DBName) // dsn = data sort name
-
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		connect.DBHost, connect.DBPort, connect.DBUser, connect.DBPassword, connect.DBName, connect.DBSSLMode)
 
 	db,err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
