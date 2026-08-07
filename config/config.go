@@ -30,12 +30,22 @@ type Config struct{
 	JWTExpire string
 	APPURL 	string
 	CloudinaryURL string
+	FrontendURL string
 }
+var envFiles = []string{".env.local", ".env"}
 
 func LoadEnv() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file found")
+	loaded := false
+	for _, file := range envFiles {
+		if err := godotenv.Load(file); err == nil {
+			log.Printf("Config dimuat dari %s", file)
+			loaded = true
+			break
+		}
+	}
+
+	if !loaded {
+		log.Println("Tidak ada file .env — memakai env var dari proses (normal di production)")
 	}
 
 	AppConfig =  &Config{
@@ -45,13 +55,14 @@ func LoadEnv() {
 		DBUser: getEnv("DB_USER","postgres"),
 		DBPassword: getEnv("DB_PASSWORD","password"),
 		DBName: getEnv("DB_NAME","project_management"),
-		DBSSLMode: getEnv("DB_SSLMODE","disable"), 
+		DBSSLMode: getEnv("DB_SSLMODE","disable"),
 		JWTSecret: getEnv("JWT_SECRET","secret"),
-		JWTExpire: getEnv("JWT_EXPIRY","6h"),
+		JWTExpire: getEnv("JWT_EXPIRED", getEnv("JWT_EXPIRY","6h")),
 		// JWTExpireMinutes: getEnv("JWT_EXPIRY_MINUTES","60"),
 		JWTRefreshToken: getEnv("REFRESH_TOKEN_EXPIRED","24h"),
 		APPURL: getEnv("APP_URL","http://localhost:3030"),
 		CloudinaryURL: getEnv("CLOUDINARY_URL",""),
+		FrontendURL: getEnv("FRONTEND_URL","http://localhost:4321"),
 	}
 }
 
@@ -75,6 +86,8 @@ func ConnectDB(){
 	if err != nil{
 		log.Fatal("Failed to connect Database", err)
 	}
+	log.Printf("Database Connected: %s:%s/%s (sslmode=%s)",
+	connect.DBHost, connect.DBPort, connect.DBName, connect.DBSSLMode)
 	sqlDB,err :=db.DB()
 	if err != nil{
 		log.Fatal("Failed to get Database instance",err)

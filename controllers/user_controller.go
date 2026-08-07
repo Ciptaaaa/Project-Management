@@ -3,11 +3,13 @@ package controllers
 import (
 	"math"
 	"strconv"
+	"time"
 
 	"github.com/Ciptaaaa/Project-Management.git/models"
 	"github.com/Ciptaaaa/Project-Management.git/services"
 	"github.com/Ciptaaaa/Project-Management.git/utils"
 	"github.com/gofiber/fiber/v3"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
 )
@@ -57,9 +59,25 @@ refreshToken, err := utils.GenerateRefreshToken(user.InternalID)
 if err != nil{
 	return utils.BadRequest(ctx, "Failed to generate refresh token",err.Error())
 }
+
+/*
+	Sebelumnya token dikirim di body JSON, lalu frontend simpan di localStorage.
+	Sekarang di-set sebagai HttpOnly cookie yang tidak bisa dibaca JavaScript,
+	jadi celah XSS tidak bisa langsung curi session.
+
+	Access token pendek (15 menit). Refresh token panjang tapi Path-nya dibatasi
+	ke /v1/auth/refresh saja, jadi tidak ikut terkirim di sembarang request.
+*/
+utils.SetAuthCookies(ctx, token, refreshToken, 15*time.Minute, 7*24*time.Hour)
+
 var userResponse models.UserResponse
 _=  copier.Copy(&userResponse, &user)
 
+/*
+	Body tetap dikembalikan untuk backward-compatibility selama frontend masih
+	transisi — setelah frontend berhenti membaca body, baris ini boleh dihapus.
+	Cookie sudah di-set lewat utils.SetAuthCookies di atas.
+*/
 return utils.Success(ctx, "Login Successfully!", fiber.Map{
 	"access_token":token,
 	"refresh_token":refreshToken,
@@ -179,17 +197,28 @@ return utils.Success(ctx, "Successfully Delete user",id)
 }
 
 func (c *UserController) RefreshToken(ctx fiber.Ctx) error {
-	var body struct {
-		RefreshToken string `json:"refresh_token"`
+	/*
+		Coba dari cookie dulu — ini yang dipakai frontend SPA setelah migrasi.
+		Kalau kosong, baca dari body JSON sebagai backward-compatibility untuk
+		client yang belum pakai cookie.
+	*/
+	refreshTokenStr := ctx.Cookies(utils.RefreshCookieName)
+
+	if refreshTokenStr == "" {
+		var body struct {
+			RefreshToken string `json:"refresh_token"`
+		}
+		if err := ctx.Bind().Body(&body); err != nil {
+			return utils.BadRequest(ctx, "Invalid Request", err.Error())
+		}
+		refreshTokenStr = body.RefreshToken
 	}
-	if err := ctx.Bind().Body(&body); err != nil {
-		return utils.BadRequest(ctx, "Invalid Request", err.Error())
-	}
-	if body.RefreshToken == "" {
+
+	if refreshTokenStr == "" {
 		return utils.BadRequest(ctx, "Invalid Request", "refresh_token is required")
 	}
 
-	userID, err := utils.ParseRefreshToken(body.RefreshToken)
+	userID, err := utils.ParseRefreshToken(refreshTokenStr)
 	if err != nil {
 		return utils.Unauthorized(ctx, "Refresh failed", err.Error())
 	}
@@ -203,7 +232,72 @@ func (c *UserController) RefreshToken(ctx fiber.Ctx) error {
 		return utils.BadRequest(ctx, "Failed to generate token", err.Error())
 	}
 
+	/*
+		Hanya access token yang diperbarui saat refresh, bukan refresh token.
+		Refresh token tidak perlu diganti setiap kali — umurnya sendiri (7 hari)
+		jauh lebih panjang dari access (15 menit).
+		Parameter ketiga "" = tidak set refresh cookie baru.
+	*/
+	utils.SetAuthCookies(ctx, newAccessToken, "", 15*time.Minute, 0)
+
+	/*
+		Body dikembalikan untuk backward-compatibility selama ada client yang
+		masih membaca token dari response JSON.
+	*/
 	return utils.Success(ctx, "Token refreshed successfully", fiber.Map{
 		"access_token": newAccessToken,
 	})
+}
+
+/*
+Logout menghapus kedua cookie di sisi server.
+
+Ini wajib ada begitu cookie jadi HttpOnly: frontend tidak punya cara menghapus
+cookie yang tidak bisa dibacanya. Tanpa endpoint ini, tombol keluar hanya
+membersihkan state React sementara browser tetap memegang session yang sah —
+tekan reload, dan user "kembali login" tanpa memasukkan apa pun.
+
+Sengaja tidak memvalidasi token dulu. Logout harus selalu berhasil; menolak
+membersihkan cookie karena token sudah kedaluwarsa justru meninggalkan cookie
+basi yang tidak bisa dibuang user lewat UI.
+*/
+func (c *UserController) Logout(ctx fiber.Ctx) error {
+	utils.ClearAuthCookies(ctx)
+	return utils.Success(ctx, "Logout Successfully!", nil)
+}
+
+/*
+Me mengembalikan user pemilik cookie yang sedang dipakai.
+
+Ini pengganti kebiasaan lama menyimpan objek user di localStorage. Nama, email,
+dan role adalah data pribadi; menyimpannya di storage yang bisa dibaca skrip
+mana pun tidak ada gunanya sekarang setelah tokennya sendiri sudah HttpOnly.
+Frontend memanggil endpoint ini sekali saat halaman dibuka, menaruh hasilnya di
+state React, dan membiarkannya hilang saat tab ditutup.
+
+Claims sudah divalidasi middleware, jadi di sini tinggal dibaca. public_id
+dipakai, bukan user_id, karena itu identitas yang dipakai seluruh API.
+*/
+func (c *UserController) Me(ctx fiber.Ctx) error {
+	claims, ok := ctx.Locals("user").(jwt.MapClaims)
+	if !ok {
+		return utils.Unauthorized(ctx, "Invalid session", "claims missing")
+	}
+
+	publicID, ok := claims["public_id"].(string)
+	if !ok {
+		return utils.Unauthorized(ctx, "Invalid session", "public_id claim missing")
+	}
+
+	user, err := c.service.GetByPublicID(publicID)
+	if err != nil {
+		return utils.Unauthorized(ctx, "Invalid session", "user not found")
+	}
+
+	var userResp models.UserResponse
+	if err := copier.Copy(&userResp, &user); err != nil {
+		return utils.InternalServerError(ctx, "Error parsing data", err.Error())
+	}
+
+	return utils.Success(ctx, "Session valid", userResp)
 }

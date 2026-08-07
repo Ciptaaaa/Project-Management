@@ -1,12 +1,9 @@
 package routes
 
 import (
-	"log"
-
 	"github.com/Ciptaaaa/Project-Management.git/controllers"
 	"github.com/Ciptaaaa/Project-Management.git/middleware"
 	"github.com/gofiber/fiber/v3"
-	"github.com/joho/godotenv"
 )
 
 func Setup(app *fiber.App,
@@ -18,14 +15,11 @@ func Setup(app *fiber.App,
 	 attachmentControl *controllers.AttachmentController,
 	 commentControl *controllers.CommentController,
 	 ){
-	err := godotenv.Load()
-	if err != nil{
-		log.Fatal("Error Loading .env file")
-	}
 
 	app.Post("/v1/auth/register", userControl.Register)
 	app.Post("/v1/auth/login", userControl.Login)
 	app.Post("/v1/auth/refresh", userControl.RefreshToken)
+	app.Post("/v1/auth/logout", userControl.Logout)
 
 	//JWT PROTECTED ROUTES v2 
 // 	api:= app.Group("/api/v1", jwtware.New(jwtware.Config{
@@ -38,8 +32,11 @@ func Setup(app *fiber.App,
 // },
 // 	}))
 
-//go fiber v3 harus pake middleware 
+//go fiber v3 harus pake middleware
 	api:= app.Group("/api/v1", middleware.JWTProtected())
+
+	//auth me endpoint - protected by JWT middleware
+	api.Get("/auth/me", userControl.Me)
 
 	//user group
 	userGroup:= api.Group("/users")
@@ -97,11 +94,4 @@ func Setup(app *fiber.App,
 	labelGroup.Get("/:id",labelControl.GetLabelByID)
 	labelGroup.Put("/:id",labelControl.UpdateLabel)
 	labelGroup.Delete("/:id",labelControl.DeleteLabel)
-
-	
-
-	//Upload File
-	// cardGroup.Post("/:id/attachments",controllerControl.UploadAttachments)//upload
-	// cardGroup.Get("/:id/attachments",controllerControl.GetAttachments)//Get list attachments
-	// cardGroup.Delete("/:card_id/attachments/:attachment_id",controllerControl.DeleteAttachments)//delete attachment
 }

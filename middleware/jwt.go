@@ -11,19 +11,31 @@ import (
 
 func JWTProtected() fiber.Handler {
 	return func(ctx fiber.Ctx) error {
-		// Ambil header Authorization
-		authHeader := ctx.Get("Authorization")
-		if authHeader == "" {
-			return utils.Unauthorized(ctx, "Missing token", "Authorization header required")
-		}
+		/*
+			Cookie dulu, header belakangan.
 
-		// Format harus "Bearer <token>"
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			return utils.Unauthorized(ctx, "Invalid token format", "Use: Bearer <token>")
-		}
+			Browser mengirim cookie HttpOnly secara otomatis, jadi frontend tidak
+			perlu — dan memang tidak bisa — menyusun header Authorization sendiri.
+			Header tetap didukung supaya Postman, curl, dan skrip integrasi yang
+			sudah ada tidak ikut rusak; persis pola Trello, di mana web client-nya
+			pakai cookie sementara API key/token disediakan untuk pihak ketiga.
+		*/
+		tokenStr := ctx.Cookies(utils.AccessCookieName)
 
-		tokenStr := parts[1]
+		if tokenStr == "" {
+			authHeader := ctx.Get("Authorization")
+			if authHeader == "" {
+				return utils.Unauthorized(ctx, "Missing token", "no session cookie or Authorization header")
+			}
+
+			// Format harus "Bearer <token>"
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				return utils.Unauthorized(ctx, "Invalid token format", "Use: Bearer <token>")
+			}
+
+			tokenStr = parts[1]
+		}
 
 		// Parse & validasi token
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
