@@ -1,0 +1,43 @@
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Binary hasil build lokal
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+server
+main
+
+# Test dan coverage
+*.test
+*.out
+coverage.txt
+
+# Upload lokal — file user tidak boleh ikut ke image
+uploads/
+files/
+tmp/
+
+# Editor & OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker sendiri
+Dockerfile
+.dockerignore
+
+# Dokumentasi tidak memengaruhi hasil build, tapi ikut membatalkan cache layer
+# setiap kali diedit. Lebih baik dikecualikan.
+*.md
+docs/
